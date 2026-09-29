@@ -1,0 +1,106 @@
+/* Layout: full-bleed night scene. The dhikr phrase and count float top-left like a page of a prayer book,
+   a slim control rail sits top-right (bottom sheet on phones), and a one-line hint sits bottom-left. */
+:root {
+  --night: #0f1217;
+  --ink: #efe7d6;
+  --muted: #9d9587;
+  --faint: #6d675e;
+  --line: rgba(239, 231, 214, .14);
+  --line-strong: rgba(239, 231, 214, .34);
+  --amber: #e2a54b;
+  --on-amber: #1c1206;
+  --panel: rgba(15, 18, 23, .7);
+  --arabic: "Amiri", "Noto Naskh Arabic", "Geeza Pro", "Traditional Arabic", serif;
+  --serif: "Amiri", "Iowan Old Style", Georgia, serif;
+  --ui: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --gutter: clamp(16px, 3vw, 40px);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; background: var(--night); color: var(--ink); }
+body { font: 13px/1.45 var(--ui); overflow: hidden; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; }
+
+#gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; opacity: 0; transition: opacity .9s ease; }
+body.ready #gl { opacity: 1; }
+#gl[data-cursor="grab"] { cursor: grab; }
+#gl[data-cursor="grabbing"] { cursor: grabbing; }
+#gl[data-cursor="count"] { cursor: pointer; }
+
+/* ── dhikr header ── */
+.dhikr { position: fixed; top: calc(var(--gutter) + env(safe-area-inset-top, 0px)); left: var(--gutter);
+  width: min(430px, calc(100vw - 2 * var(--gutter))); pointer-events: none; }
+.eyebrow { font: 500 10.5px/1 var(--ui); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+.phrase { transition: opacity .35s ease, transform .35s ease; }
+.phrase.swap { opacity: 0; transform: translateY(6px); }
+.arabic { font: 400 clamp(42px, 5.2vw, 70px)/1.3 var(--arabic); margin: 16px 0 0; text-align: left; unicode-bidi: isolate; }
+.translit { font: italic 400 21px/1.2 var(--serif); margin: 4px 0 0; }
+.gloss { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+.count { display: flex; align-items: baseline; gap: 10px; margin-top: 22px; }
+.count .num { font: 400 64px/.9 var(--serif); font-variant-numeric: tabular-nums; min-width: 1.2ch; }
+.count .of { font: 400 18px/1 var(--serif); color: var(--muted); }
+.count .arnum { font: 400 26px/1 var(--arabic); color: var(--faint); margin-left: 6px; }
+.bars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; width: 234px; max-width: 100%; margin-top: 14px; }
+.bars i { display: block; height: 2px; background: var(--line); position: relative; overflow: hidden; }
+.bars b { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--amber); transition: width .25s ease; }
+.meta { display: flex; gap: 14px; margin-top: 10px; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+/* ── control rail ── */
+.rail { position: fixed; top: calc(var(--gutter) + env(safe-area-inset-top, 0px)); right: var(--gutter); width: 236px;
+  display: grid; gap: 16px; padding: 16px; border: 1px solid var(--line); background: var(--panel);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.group { display: grid; gap: 8px; }
+.label { font: 500 10.5px/1 var(--ui); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+.seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line-strong); }
+.seg button { background: none; border: 0; padding: 9px 0; cursor: pointer; min-height: 38px; }
+.seg button + button { border-left: 1px solid var(--line-strong); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--night); }
+.swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.swatch { display: grid; justify-items: center; gap: 7px; padding: 9px 2px 8px; border: 1px solid transparent; background: none;
+  color: var(--muted); cursor: pointer; font: italic 15px/1 var(--serif); }
+.swatch .dot { width: 24px; height: 24px; border-radius: 50%; background: var(--c);
+  box-shadow: inset -3px -4px 6px rgba(0,0,0,.45), inset 3px 3px 5px rgba(255,255,255,.28); }
+.swatch[aria-checked="true"] { border-color: var(--line-strong); color: var(--ink); }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.btn { border: 1px solid var(--line-strong); background: none; padding: 9px 10px; min-height: 38px; cursor: pointer; }
+.btn:hover { border-color: var(--ink); }
+.btn.primary { background: var(--amber); border-color: var(--amber); color: var(--on-amber); font-weight: 500; width: 100%; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn kbd { font: 11px/1 var(--ui); opacity: .6; margin-left: 6px; }
+button:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
+
+.hint { position: fixed; left: var(--gutter); bottom: calc(var(--gutter) + env(safe-area-inset-bottom, 0px)); max-width: 380px; margin: 0;
+  font: italic 17px/1.4 var(--serif); color: var(--muted); pointer-events: none; }
+
+.fallback { position: fixed; inset: 0; display: grid; place-items: center; padding: var(--gutter); }
+.fallback > div { max-width: 420px; border: 1px solid var(--line-strong); padding: 26px; }
+.fallback h2 { font: italic 400 30px/1.1 var(--serif); margin: 10px 0; }
+.fallback p { margin: 0; color: var(--muted); }
+
+@media (max-width: 760px) {
+  .dhikr { top: calc(14px + env(safe-area-inset-top, 0px)); }
+  .arabic { font-size: 38px; margin-top: 10px; }
+  .translit { font-size: 18px; }
+  .gloss { font-size: 12px; }
+  .count { margin-top: 12px; }
+  .count .num { font-size: 46px; }
+  .rail { top: auto; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; width: auto;
+    grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; }
+  .rail .group.varieties { grid-column: 1 / -1; order: -1; }
+  .rail .label { display: none; }
+  .swatches { grid-template-columns: repeat(3, 1fr); }
+  .swatch { grid-auto-flow: column; justify-content: center; padding: 7px 4px; }
+  .swatch .dot { width: 18px; height: 18px; }
+  .btn .kbdk { display: none; }
+  .hint { display: none; }
+}
+@media (max-height: 640px) and (min-width: 761px) {
+  .arabic { font-size: 44px; margin-top: 10px; }
+  .count { margin-top: 12px; }
+  .count .num { font-size: 48px; }
+  .rail { gap: 10px; padding: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #gl, .phrase, .bars b { transition: none; }
+}

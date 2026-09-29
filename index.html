@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1217">
+<title>Misbaḥa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+<canvas id="gl" tabindex="0" aria-label="A 3D strand of 99 prayer beads hanging over a wooden peg. In Count mode, tap or press Space to pass one bead. In Hold mode, drag the beads."></canvas>
+
+<header class="dhikr">
+  <div class="eyebrow">Misbaḥa · 99 beads</div>
+  <div class="phrase" id="phrase">
+    <p class="arabic" lang="ar" dir="rtl" id="ar">سُبْحَانَ ٱللَّٰهِ</p>
+    <p class="translit" id="tr">Subḥāna-llāh</p>
+    <p class="gloss" id="gs">Glory be to God</p>
+  </div>
+  <div class="count" aria-live="polite"><span class="num" id="num">0</span><span class="of" id="of">/ 33</span><span class="arnum" id="arnum" lang="ar">٠</span></div>
+  <div class="bars" aria-hidden="true"><i><b id="b0"></b></i><i><b id="b1"></b></i><i><b id="b2"></b></i></div>
+  <div class="meta"><span id="total">0 of 99</span><span id="round">Round 1</span></div>
+</header>
+
+<aside class="rail" aria-label="Controls">
+  <div class="group">
+    <span class="label">Mode</span>
+    <div class="seg" role="group" aria-label="Mode">
+      <button type="button" id="modeCount" aria-pressed="true">Count</button>
+      <button type="button" id="modeHold" aria-pressed="false">Hold</button>
+    </div>
+  </div>
+  <div class="group varieties">
+    <span class="label">Beads</span>
+    <div class="swatches" id="swatches" role="radiogroup" aria-label="Bead material"></div>
+  </div>
+  <div class="group" id="countGroup">
+    <button class="btn primary" type="button" id="next">Next bead<kbd class="kbdk">Space</kbd></button>
+  </div>
+  <div class="group">
+    <div class="row">
+      <button class="btn" type="button" id="sound" aria-pressed="true">Sound on</button>
+      <button class="btn" type="button" id="reset">Reset</button>
+    </div>
+  </div>
+</aside>
+
+<p class="hint" id="hint">Tap anywhere or press Space to pass one bead over the peg. Drag to turn the view.</p>
+
+<div class="fallback" id="fallback" hidden>
+  <div>
+    <span class="label">3D view unavailable</span>
+    <h2>This misbaḥa needs WebGL.</h2>
+    <p>Your browser could not start the 3D renderer. Try a recent Chrome, Safari, Edge or Firefox with hardware acceleration turned on.</p>
+  </div>
+</div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

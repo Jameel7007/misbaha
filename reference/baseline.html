@@ -1,0 +1,814 @@
+<title>Misbaḥa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+  /* Layout: full-bleed night scene. The dhikr phrase and count float top-left like a page of a prayer book,
+     a slim control rail sits top-right (bottom sheet on phones), and a one-line hint sits bottom-left. */
+  :root {
+    --night: #0f1217;
+    --ink: #efe7d6;
+    --muted: #9d9587;
+    --faint: #6d675e;
+    --line: rgba(239, 231, 214, .14);
+    --line-strong: rgba(239, 231, 214, .34);
+    --amber: #e2a54b;
+    --on-amber: #1c1206;
+    --panel: rgba(15, 18, 23, .7);
+    --arabic: "Amiri", "Noto Naskh Arabic", "Geeza Pro", "Traditional Arabic", serif;
+    --serif: "Amiri", "Iowan Old Style", Georgia, serif;
+    --ui: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --gutter: clamp(16px, 3vw, 40px);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; background: var(--night); color: var(--ink); }
+  body { font: 13px/1.45 var(--ui); overflow: hidden; -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; }
+
+  #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; opacity: 0; transition: opacity .9s ease; }
+  body.ready #gl { opacity: 1; }
+  #gl[data-cursor="grab"] { cursor: grab; }
+  #gl[data-cursor="grabbing"] { cursor: grabbing; }
+  #gl[data-cursor="count"] { cursor: pointer; }
+
+  /* ── dhikr header ── */
+  .dhikr { position: fixed; top: calc(var(--gutter) + env(safe-area-inset-top, 0px)); left: var(--gutter);
+    width: min(430px, calc(100vw - 2 * var(--gutter))); pointer-events: none; }
+  .eyebrow { font: 500 10.5px/1 var(--ui); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+  .phrase { transition: opacity .35s ease, transform .35s ease; }
+  .phrase.swap { opacity: 0; transform: translateY(6px); }
+  .arabic { font: 400 clamp(42px, 5.2vw, 70px)/1.3 var(--arabic); margin: 16px 0 0; text-align: left; unicode-bidi: isolate; }
+  .translit { font: italic 400 21px/1.2 var(--serif); margin: 4px 0 0; }
+  .gloss { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+  .count { display: flex; align-items: baseline; gap: 10px; margin-top: 22px; }
+  .count .num { font: 400 64px/.9 var(--serif); font-variant-numeric: tabular-nums; min-width: 1.2ch; }
+  .count .of { font: 400 18px/1 var(--serif); color: var(--muted); }
+  .count .arnum { font: 400 26px/1 var(--arabic); color: var(--faint); margin-left: 6px; }
+  .bars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; width: 234px; max-width: 100%; margin-top: 14px; }
+  .bars i { display: block; height: 2px; background: var(--line); position: relative; overflow: hidden; }
+  .bars b { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--amber); transition: width .25s ease; }
+  .meta { display: flex; gap: 14px; margin-top: 10px; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+  /* ── control rail ── */
+  .rail { position: fixed; top: calc(var(--gutter) + env(safe-area-inset-top, 0px)); right: var(--gutter); width: 236px;
+    display: grid; gap: 16px; padding: 16px; border: 1px solid var(--line); background: var(--panel);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  .group { display: grid; gap: 8px; }
+  .label { font: 500 10.5px/1 var(--ui); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line-strong); }
+  .seg button { background: none; border: 0; padding: 9px 0; cursor: pointer; min-height: 38px; }
+  .seg button + button { border-left: 1px solid var(--line-strong); }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--night); }
+  .swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .swatch { display: grid; justify-items: center; gap: 7px; padding: 9px 2px 8px; border: 1px solid transparent; background: none;
+    color: var(--muted); cursor: pointer; font: italic 15px/1 var(--serif); }
+  .swatch .dot { width: 24px; height: 24px; border-radius: 50%; background: var(--c);
+    box-shadow: inset -3px -4px 6px rgba(0,0,0,.45), inset 3px 3px 5px rgba(255,255,255,.28); }
+  .swatch[aria-checked="true"] { border-color: var(--line-strong); color: var(--ink); }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .btn { border: 1px solid var(--line-strong); background: none; padding: 9px 10px; min-height: 38px; cursor: pointer; }
+  .btn:hover { border-color: var(--ink); }
+  .btn.primary { background: var(--amber); border-color: var(--amber); color: var(--on-amber); font-weight: 500; width: 100%; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn kbd { font: 11px/1 var(--ui); opacity: .6; margin-left: 6px; }
+  button:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
+
+  .hint { position: fixed; left: var(--gutter); bottom: calc(var(--gutter) + env(safe-area-inset-bottom, 0px)); max-width: 380px; margin: 0;
+    font: italic 17px/1.4 var(--serif); color: var(--muted); pointer-events: none; }
+
+  .fallback { position: fixed; inset: 0; display: grid; place-items: center; padding: var(--gutter); }
+  .fallback > div { max-width: 420px; border: 1px solid var(--line-strong); padding: 26px; }
+  .fallback h2 { font: italic 400 30px/1.1 var(--serif); margin: 10px 0; }
+  .fallback p { margin: 0; color: var(--muted); }
+
+  @media (max-width: 760px) {
+    .dhikr { top: calc(14px + env(safe-area-inset-top, 0px)); }
+    .arabic { font-size: 38px; margin-top: 10px; }
+    .translit { font-size: 18px; }
+    .gloss { font-size: 12px; }
+    .count { margin-top: 12px; }
+    .count .num { font-size: 46px; }
+    .rail { top: auto; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; width: auto;
+      grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; }
+    .rail .group.varieties { grid-column: 1 / -1; order: -1; }
+    .rail .label { display: none; }
+    .swatches { grid-template-columns: repeat(3, 1fr); }
+    .swatch { grid-auto-flow: column; justify-content: center; padding: 7px 4px; }
+    .swatch .dot { width: 18px; height: 18px; }
+    .btn .kbdk { display: none; }
+    .hint { display: none; }
+  }
+  @media (max-height: 640px) and (min-width: 761px) {
+    .arabic { font-size: 44px; margin-top: 10px; }
+    .count { margin-top: 12px; }
+    .count .num { font-size: 48px; }
+    .rail { gap: 10px; padding: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #gl, .phrase, .bars b { transition: none; }
+  }
+</style>
+
+<canvas id="gl" tabindex="0" aria-label="A 3D strand of 99 prayer beads hanging over a wooden peg. In Count mode, tap or press Space to pass one bead. In Hold mode, drag the beads."></canvas>
+
+<header class="dhikr">
+  <div class="eyebrow">Misbaḥa · 99 beads</div>
+  <div class="phrase" id="phrase">
+    <p class="arabic" lang="ar" dir="rtl" id="ar">سُبْحَانَ ٱللَّٰهِ</p>
+    <p class="translit" id="tr">Subḥāna-llāh</p>
+    <p class="gloss" id="gs">Glory be to God</p>
+  </div>
+  <div class="count" aria-live="polite"><span class="num" id="num">0</span><span class="of" id="of">/ 33</span><span class="arnum" id="arnum" lang="ar">٠</span></div>
+  <div class="bars" aria-hidden="true"><i><b id="b0"></b></i><i><b id="b1"></b></i><i><b id="b2"></b></i></div>
+  <div class="meta"><span id="total">0 of 99</span><span id="round">Round 1</span></div>
+</header>
+
+<aside class="rail" aria-label="Controls">
+  <div class="group">
+    <span class="label">Mode</span>
+    <div class="seg" role="group" aria-label="Mode">
+      <button type="button" id="modeCount" aria-pressed="true">Count</button>
+      <button type="button" id="modeHold" aria-pressed="false">Hold</button>
+    </div>
+  </div>
+  <div class="group varieties">
+    <span class="label">Beads</span>
+    <div class="swatches" id="swatches" role="radiogroup" aria-label="Bead material"></div>
+  </div>
+  <div class="group" id="countGroup">
+    <button class="btn primary" type="button" id="next">Next bead<kbd class="kbdk">Space</kbd></button>
+  </div>
+  <div class="group">
+    <div class="row">
+      <button class="btn" type="button" id="sound" aria-pressed="true">Sound on</button>
+      <button class="btn" type="button" id="reset">Reset</button>
+    </div>
+  </div>
+</aside>
+
+<p class="hint" id="hint">Tap anywhere or press Space to pass one bead over the peg. Drag to turn the view.</p>
+
+<div class="fallback" id="fallback" hidden>
+  <div>
+    <span class="label">3D view unavailable</span>
+    <h2>This misbaḥa needs WebGL.</h2>
+    <p>Your browser could not start the 3D renderer. Try a recent Chrome, Safari, Edge or Firefox with hardware acceleration turned on.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const cv = $('gl');
+  const fail = () => { $('fallback').hidden = false; cv.hidden = true; };
+  if (!window.THREE) { fail(); return; }
+  const T = THREE;
+
+  let renderer;
+  try { renderer = new T.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' }); }
+  catch (e) { fail(); return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = T.sRGBEncoding;
+  renderer.toneMapping = T.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.08;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = T.PCFSoftShadowMap;
+
+  // seeded random so the strand looks the same on every load
+  function rng(seed) {
+    let s = seed >>> 0;
+    return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  const R = rng(99);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
+  const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const store = {
+    get(k) { try { return localStorage.getItem('misbaha.' + k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem('misbaha.' + k, v); } catch (e) {} },
+  };
+
+  // ── scene ──
+  const NIGHT = 0x0f1217;
+  const scene = new T.Scene();
+  scene.background = new T.Color(NIGHT);
+  scene.fog = new T.Fog(NIGHT, 9, 24);
+  const camera = new T.PerspectiveCamera(32, 1, 0.05, 80);
+
+  // studio reflections: a few glowing panels baked into an environment map
+  (function makeEnv() {
+    const s = new T.Scene();
+    s.add(new T.Mesh(new T.BoxGeometry(30, 30, 30), new T.MeshBasicMaterial({ color: 0x14161b, side: T.BackSide })));
+    const panel = (w, h, col, p) => { const m = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ color: col, side: T.DoubleSide })); m.position.set(p[0], p[1], p[2]); m.lookAt(0, 0, 0); s.add(m); };
+    panel(7, 4, new T.Color(5.0, 4.1, 3.0), [5, 7, 6]);
+    panel(3, 7, new T.Color(0.7, 0.85, 1.25), [-8, 3, 2]);
+    panel(10, 1.6, new T.Color(1.6, 1.35, 1.1), [0, 10, -5]);
+    panel(12, 2, new T.Color(0.35, 0.12, 0.1), [0, -6, 0]);
+    const pm = new T.PMREMGenerator(renderer);
+    scene.environment = pm.fromScene(s, 0.035).texture;
+    pm.dispose();
+  })();
+
+  const key = new T.DirectionalLight(0xffe0b8, 2.4);
+  key.position.set(3, 10, 5);
+  key.target.position.set(0, 2.6, 0);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  Object.assign(key.shadow.camera, { left: -4.5, right: 4.5, top: 5.5, bottom: -5.5, near: 1, far: 26 });
+  key.shadow.bias = -0.0004;
+  key.shadow.normalBias = 0.02;
+  scene.add(key, key.target);
+  const rim = new T.DirectionalLight(0x9db4ff, 0.9);
+  rim.position.set(-5, 6, -6);
+  scene.add(rim);
+  scene.add(new T.HemisphereLight(0x7f8fa8, 0x2a1210, 0.35));
+
+  // ── procedural textures ──
+  function canvasTex(w, h, draw) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    draw(c.getContext('2d'), w, h);
+    const t = new T.CanvasTexture(c);
+    t.encoding = T.sRGBEncoding;
+    t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    return t;
+  }
+  // wood grain: rings around the bore (sphere v runs pole to pole along the thread)
+  const grainTex = canvasTex(256, 256, (g, w, h) => {
+    const img = g.createImageData(w, h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const u = x / w, v = y / h;
+      const warp = Math.sin(u * Math.PI * 4 + v * 9) * 0.018 + Math.sin(u * Math.PI * 10 + 1.3) * 0.008;
+      const ring = Math.pow(0.5 + 0.5 * Math.sin((v + warp) * 38 * Math.PI * 2), 6);
+      const fine = 0.5 + 0.5 * Math.sin((v + warp * 1.6) * 260);
+      const L = clamp(0.98 - ring * 0.34 - fine * 0.06, 0, 1);
+      const k = (y * w + x) * 4;
+      img.data[k] = 255 * L; img.data[k + 1] = 245 * L; img.data[k + 2] = 232 * L; img.data[k + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+  });
+  // amber: soft cloudy inclusions, wrapped so the seam is invisible
+  const cloudTex = canvasTex(256, 128, (g, w, h) => {
+    g.fillStyle = '#fff'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 80; i++) {
+      const x = R() * w, y = R() * h, r = 6 + R() * 26, dark = R() < 0.55;
+      for (const dx of [-w, 0, w]) {
+        const grd = g.createRadialGradient(x + dx, y, 0, x + dx, y, r);
+        grd.addColorStop(0, dark ? 'rgba(140,60,15,.24)' : 'rgba(255,238,196,.4)');
+        grd.addColorStop(1, dark ? 'rgba(140,60,15,0)' : 'rgba(255,238,196,0)');
+        g.fillStyle = grd; g.beginPath(); g.arc(x + dx, y, r, 0, 7); g.fill();
+      }
+    }
+  });
+  const fringeTex = canvasTex(128, 8, (g, w, h) => {
+    for (let x = 0; x < w; x++) { const L = (0.62 + R() * 0.38) * 255 | 0; g.fillStyle = `rgb(${L},${L},${L})`; g.fillRect(x, 0, 1, h); }
+  });
+  // prayer-rug ground: madder red wool with a khatam (eight-point star) lattice
+  const rugTex = canvasTex(512, 512, (g, w, h) => {
+    g.fillStyle = '#2e1216'; g.fillRect(0, 0, w, h);
+    const img = g.getImageData(0, 0, w, h);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const px = (i / 4) % w, py = (i / 4 / w) | 0;
+      const n = (R() - 0.5) * 16 + ((px + py) % 2 ? 3 : -3);
+      img.data[i] += n; img.data[i + 1] += n * 0.55; img.data[i + 2] += n * 0.55;
+    }
+    g.putImageData(img, 0, 0);
+    const khatam = (cx, cy, r, fill) => {
+      for (const rot of [0, Math.PI / 4]) {
+        g.beginPath();
+        for (let k = 0; k < 4; k++) { const a = rot + Math.PI / 4 + k * Math.PI / 2; const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r; k ? g.lineTo(x, y) : g.moveTo(x, y); }
+        g.closePath(); fill ? g.fill() : g.stroke();
+      }
+    };
+    const pts = [[256, 256], [0, 0], [512, 0], [0, 512], [512, 512]];
+    g.fillStyle = 'rgba(24,46,56,.3)'; for (const [x, y] of pts) khatam(x, y, 46, true);
+    g.strokeStyle = 'rgba(214,168,96,.14)'; g.lineWidth = 3; for (const [x, y] of pts) khatam(x, y, 118);
+    g.strokeStyle = 'rgba(214,168,96,.08)'; g.lineWidth = 2; for (const [x, y] of pts) khatam(x, y, 76);
+    g.strokeStyle = 'rgba(214,168,96,.05)'; g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(0, 256); g.lineTo(512, 256); g.moveTo(256, 0); g.lineTo(256, 512); g.stroke();
+  });
+  rugTex.wrapS = rugTex.wrapT = T.RepeatWrapping;
+  rugTex.repeat.set(10, 10);
+
+  const rug = new T.Mesh(new T.PlaneGeometry(40, 40), new T.MeshStandardMaterial({ map: rugTex, roughness: 0.96, metalness: 0 }));
+  rug.rotation.x = -Math.PI / 2;
+  rug.receiveShadow = true;
+  scene.add(rug);
+
+  // ── the peg the strand hangs over (stands in for the finger) ──
+  const PEG = { x: 0, y: 6.2 }, PEG_R = 0.075, PEG_BACK = -3.2, PEG_FRONT = 0.34;
+  let pegEnd = PEG_FRONT, pegGoal = PEG_FRONT;
+  const pegMat = new T.MeshPhysicalMaterial({ color: new T.Color('#4a2c1b').convertSRGBToLinear(), map: grainTex, roughness: 0.42, clearcoat: 0.5, clearcoatRoughness: 0.2 });
+  const pegGeo = new T.CylinderGeometry(PEG_R, PEG_R, 1, 36, 1, true); pegGeo.rotateX(Math.PI / 2);
+  const pegBody = new T.Mesh(pegGeo, pegMat);
+  const pegCap = new T.Mesh(new T.SphereGeometry(PEG_R, 32, 16), pegMat);
+  pegBody.castShadow = pegCap.castShadow = true;
+  scene.add(pegBody, pegCap);
+  function placePeg() {
+    const len = Math.max(0.001, pegEnd - PEG_BACK);
+    pegBody.scale.set(1, 1, len);
+    pegBody.position.set(PEG.x, PEG.y, (PEG_BACK + pegEnd) / 2);
+    pegCap.position.set(PEG.x, PEG.y, pegEnd);
+    pegBody.visible = pegCap.visible = pegEnd > PEG_BACK + 0.05;
+  }
+
+  // ── the strand: 0 imam, 1–33, separator, 35–67, separator, 69–101, then the tassel cord ──
+  const NL = 102, NT = 5, N = NL + NT, SEP = [34, 68];
+  const X = new Float32Array(3 * N), P0 = new Float32Array(3 * N), V = new Float32Array(3 * N);
+  const W = new Float32Array(N), INV = new Float32Array(N), RAD = new Float32Array(N), HL = new Float32Array(N);
+  const KIND = new Uint8Array(N), SIZE = new Float32Array(N), SPIN = new Float32Array(N), TONE = new Float32Array(N);
+  const BR = 0.05;
+  for (let i = 0; i < N; i++) {
+    const kind = i === 0 ? 2 : i < NL ? (SEP.includes(i) ? 1 : 0) : 3;
+    KIND[i] = kind;
+    if (kind === 0) { SIZE[i] = BR * (0.95 + R() * 0.1); RAD[i] = SIZE[i]; HL[i] = SIZE[i] * 0.86; INV[i] = 1; }
+    else if (kind === 1) { RAD[i] = 0.04; HL[i] = 0.024; INV[i] = 1.4; }
+    else if (kind === 2) { RAD[i] = 0.055; HL[i] = 0.11; INV[i] = 0.5; }
+    else { RAD[i] = 0.022; HL[i] = 0.025; INV[i] = 2.2; }
+    SPIN[i] = R() * Math.PI * 2; TONE[i] = R();
+    W[i] = INV[i];
+  }
+  const beadNo = i => i <= 0 ? 0 : i <= 34 ? Math.min(i, 33) : i <= 68 ? Math.min(i - 1, 66) : i - 2;
+
+  const con = [];
+  for (let i = 0; i < NL; i++) { const j = (i + 1) % NL; con.push([i, j, HL[i] + HL[j] + 0.003]); }
+  con.push([0, NL, HL[0] + 0.03]);
+  for (let k = 0; k < NT - 1; k++) con.push([NL + k, NL + k + 1, 0.05]);
+  const CA = new Int32Array(con.map(c => c[0])), CB = new Int32Array(con.map(c => c[1])), CL = new Float32Array(con.map(c => c[2]));
+  const linked = new Set(con.map(c => Math.min(c[0], c[1]) * N + Math.max(c[0], c[1])));
+  const pairList = [];
+  for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) if (!linked.has(i * N + j)) pairList.push(i, j);
+  const PAIRS = new Int32Array(pairList);
+
+  // ── physics: position-based dynamics, fixed 60 Hz step, 12 substeps ──
+  const G = 55, SUB = 12, FRIC = 0.3, DAMP = 0.9993;
+  let pin = 0, held = true;
+  let pinFrom = [0, 0, 0], pinTo = [0, 0, 0];
+  let grab = -1, grabFrom = [0, 0, 0], grabTo = [0, 0, 0];
+  let bias = 0;
+
+  function step(dt) {
+    const h = dt / SUB;
+    for (let s = 0; s < SUB; s++) {
+      const a = (s + 1) / SUB;
+      for (let i = 0; i < N; i++) {
+        const k = 3 * i;
+        P0[k] = X[k]; P0[k + 1] = X[k + 1]; P0[k + 2] = X[k + 2];
+        if (W[i] === 0) continue;
+        V[k + 1] -= G * h;
+        if (bias && i < NL && X[k + 1] < PEG.y + 0.05) {
+          const o = (i - pin + NL) % NL;
+          if (o) V[k] += (o < NL / 2 ? 1 : -1) * bias * h;
+        }
+        X[k] += V[k] * h; X[k + 1] += V[k + 1] * h; X[k + 2] += V[k + 2] * h;
+      }
+      if (held) { const k = 3 * pin; for (let c = 0; c < 3; c++) X[k + c] = pinFrom[c] + (pinTo[c] - pinFrom[c]) * a; }
+      if (grab >= 0) { const k = 3 * grab; for (let c = 0; c < 3; c++) X[k + c] = grabFrom[c] + (grabTo[c] - grabFrom[c]) * a; }
+
+      for (let it = 0; it < 2; it++) {
+        for (let c = 0; c < CA.length; c++) {
+          const i = CA[c], j = CB[c], wi = W[i], wj = W[j], ws = wi + wj;
+          if (ws === 0) continue;
+          const ki = 3 * i, kj = 3 * j;
+          const dx = X[kj] - X[ki], dy = X[kj + 1] - X[ki + 1], dz = X[kj + 2] - X[ki + 2];
+          const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+          if (d < 1e-9) continue;
+          const f = (d - CL[c]) / (d * ws);
+          X[ki] += dx * f * wi; X[ki + 1] += dy * f * wi; X[ki + 2] += dz * f * wi;
+          X[kj] -= dx * f * wj; X[kj + 1] -= dy * f * wj; X[kj + 2] -= dz * f * wj;
+        }
+      }
+      for (let p = 0; p < PAIRS.length; p += 2) {
+        const i = PAIRS[p], j = PAIRS[p + 1];
+        const ki = 3 * i, kj = 3 * j;
+        const dx = X[kj] - X[ki], dy = X[kj + 1] - X[ki + 1], dz = X[kj + 2] - X[ki + 2];
+        const m = RAD[i] + RAD[j], d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 >= m * m || d2 < 1e-12) continue;
+        const wi = W[i], wj = W[j], ws = wi + wj;
+        if (ws === 0) continue;
+        const d = Math.sqrt(d2), f = (d - m) / (d * ws);
+        X[ki] += dx * f * wi; X[ki + 1] += dy * f * wi; X[ki + 2] += dz * f * wi;
+        X[kj] -= dx * f * wj; X[kj + 1] -= dy * f * wj; X[kj + 2] -= dz * f * wj;
+      }
+      for (let i = 0; i < N; i++) {
+        if (W[i] === 0) continue;
+        const k = 3 * i, r = RAD[i];
+        if (pegEnd > PEG_BACK + 0.02 && X[k + 2] > PEG_BACK && X[k + 2] < pegEnd + r * 0.5) {
+          const dx = X[k] - PEG.x, dy = X[k + 1] - PEG.y, d = Math.hypot(dx, dy), m = PEG_R + r;
+          if (d < m) {
+            if (d < 1e-6) X[k + 1] = PEG.y + m;
+            else { X[k] = PEG.x + dx / d * m; X[k + 1] = PEG.y + dy / d * m; }
+          }
+        }
+        if (X[k + 1] < r) {
+          X[k + 1] = r;
+          X[k] -= (X[k] - P0[k]) * FRIC; X[k + 2] -= (X[k + 2] - P0[k + 2]) * FRIC;
+        }
+        X[k] = clamp(X[k], -12, 12); X[k + 2] = clamp(X[k + 2], -12, 12);
+      }
+      const inv = 1 / h;
+      for (let i = 0; i < 3 * N; i++) V[i] = (X[i] - P0[i]) * inv * DAMP;
+    }
+    pinFrom = pinTo.slice();
+    grabFrom = grabTo.slice();
+  }
+
+  const pinTop = i => [PEG.x, PEG.y + PEG_R + RAD[i] + 0.001, 0];
+
+  // lay the loop out as a tall thin ellipse hanging from the peg, then let it settle
+  function layoutHang() {
+    const top = pinTop(pin);
+    let L = 0; for (let c = 0; c < NL; c++) L += CL[c];
+    const b = L / 4.15, a = 0.15, cy = top[1] - b;
+    for (let j = 0; j < NL; j++) {
+      const i = (pin + j) % NL, th = Math.PI / 2 - 2 * Math.PI * j / NL;
+      X[3 * i] = a * Math.cos(th); X[3 * i + 1] = j === 0 ? top[1] : cy + b * Math.sin(th); X[3 * i + 2] = 0;
+    }
+    for (let k = 0; k < NT; k++) { const i = NL + k; X[3 * i] = X[0]; X[3 * i + 1] = X[1] - 0.14 - k * 0.05; X[3 * i + 2] = 0.02; }
+    V.fill(0);
+    held = true; W.set(INV); W[pin] = 0;
+    pinFrom = top.slice(); pinTo = top.slice();
+    pegEnd = pegGoal = PEG_FRONT;
+  }
+
+  // ── meshes ──
+  const up = new T.Vector3(0, 1, 0), vA = new T.Vector3(), vB = new T.Vector3(), vS = new T.Vector3();
+  const q = new T.Quaternion(), qs = new T.Quaternion(), m4 = new T.Matrix4();
+  const beadIdx = [], sepIdx = [];
+  for (let i = 1; i < NL; i++) (KIND[i] === 0 ? beadIdx : sepIdx).push(i);
+
+  const beadMat = new T.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.06, map: cloudTex });
+  const beads = new T.InstancedMesh(new T.SphereGeometry(1, 32, 22), beadMat, beadIdx.length);
+  beads.castShadow = true; beads.frustumCulled = false;
+  const sepMat = new T.MeshStandardMaterial({ color: new T.Color('#d4ae62').convertSRGBToLinear(), metalness: 1, roughness: 0.26 });
+  const seps = new T.InstancedMesh(new T.SphereGeometry(1, 28, 14), sepMat, sepIdx.length);
+  seps.castShadow = true; seps.frustumCulled = false;
+
+  const lathePts = [[0, -0.12], [0.02, -0.118], [0.036, -0.1], [0.05, -0.058], [0.052, -0.03], [0.044, 0.004], [0.031, 0.032], [0.036, 0.058], [0.033, 0.085], [0.02, 0.108], [0.008, 0.12], [0, 0.122]].map(p => new T.Vector2(p[0], p[1]));
+  const imamMat = beadMat.clone();
+  const imam = new T.Mesh(new T.LatheGeometry(lathePts, 36), imamMat);
+  imam.castShadow = true;
+
+  const threadMat = new T.MeshStandardMaterial({ color: 0x1f4a3b, roughness: 0.75 });
+  const threadGeo = new T.CylinderGeometry(1, 1, 1, 6, 1, true);
+  const threads = new T.InstancedMesh(threadGeo, threadMat, CA.length);
+  threads.castShadow = true; threads.frustumCulled = false;
+  const tasselGeo = new T.ConeGeometry(0.05, 0.24, 40, 1, false); tasselGeo.translate(0, -0.12, 0);
+  const tasselMat = new T.MeshStandardMaterial({ color: 0x1f4a3b, roughness: 0.85, map: fringeTex });
+  const tassel = new T.Mesh(tasselGeo, tasselMat);
+  const knot = new T.Mesh(new T.SphereGeometry(0.03, 16, 12), threadMat);
+  tassel.castShadow = knot.castShadow = true;
+  scene.add(beads, seps, imam, threads, tassel, knot);
+
+  const P = i => vA.set(X[3 * i], X[3 * i + 1], X[3 * i + 2]);
+  function orientAlong(i, prev, next, out) {
+    out.set(X[3 * next] - X[3 * prev], X[3 * next + 1] - X[3 * prev + 1], X[3 * next + 2] - X[3 * prev + 2]);
+    if (out.lengthSq() < 1e-10) out.set(0, 1, 0);
+    q.setFromUnitVectors(up, out.normalize());
+    qs.setFromAxisAngle(up, SPIN[i]);
+    return q.multiply(qs);
+  }
+  function updateMeshes() {
+    beadIdx.forEach((i, n) => {
+      orientAlong(i, (i - 1 + NL) % NL, (i + 1) % NL, vB);
+      const s = SIZE[i];
+      m4.compose(P(i), q, vS.set(s, s * 0.86, s));
+      beads.setMatrixAt(n, m4);
+    });
+    beads.instanceMatrix.needsUpdate = true;
+    sepIdx.forEach((i, n) => {
+      orientAlong(i, i - 1, i + 1, vB);
+      m4.compose(P(i), q, vS.set(0.047, 0.024, 0.047));
+      seps.setMatrixAt(n, m4);
+    });
+    seps.instanceMatrix.needsUpdate = true;
+    // imam: the loop enters its top, the tassel leaves its bottom
+    vB.set((X[3] + X[3 * (NL - 1)]) / 2 - X[3 * NL], (X[4] + X[3 * (NL - 1) + 1]) / 2 - X[3 * NL + 1], (X[5] + X[3 * (NL - 1) + 2]) / 2 - X[3 * NL + 2]);
+    if (vB.lengthSq() < 1e-8) vB.set(0, 1, 0);
+    imam.quaternion.setFromUnitVectors(up, vB.normalize());
+    imam.position.set(X[0], X[1], X[2]);
+    for (let c = 0; c < CA.length; c++) {
+      const i = CA[c], j = CB[c];
+      vB.set(X[3 * j] - X[3 * i], X[3 * j + 1] - X[3 * i + 1], X[3 * j + 2] - X[3 * i + 2]);
+      const len = vB.length() || 1e-4;
+      q.setFromUnitVectors(up, vB.multiplyScalar(1 / len));
+      vA.set((X[3 * i] + X[3 * j]) / 2, (X[3 * i + 1] + X[3 * j + 1]) / 2, (X[3 * i + 2] + X[3 * j + 2]) / 2);
+      const r = i >= NL - 1 && (i >= NL || j >= NL) ? 0.012 : 0.0065;
+      m4.compose(vA, q, vS.set(r, len, r));
+      threads.setMatrixAt(c, m4);
+    }
+    threads.instanceMatrix.needsUpdate = true;
+    const e = N - 1, e2 = N - 2;
+    vB.set(X[3 * e] - X[3 * e2], X[3 * e + 1] - X[3 * e2 + 1], X[3 * e + 2] - X[3 * e2 + 2]);
+    if (vB.lengthSq() < 1e-10) vB.set(0, -1, 0);
+    tassel.quaternion.setFromUnitVectors(vA.set(0, -1, 0), vB.normalize());
+    tassel.position.set(X[3 * e2], X[3 * e2 + 1], X[3 * e2 + 2]);
+    knot.position.copy(tassel.position);
+    placePeg();
+  }
+
+  // ── bead varieties ──
+  const VARIETIES = {
+    amber: { name: 'Amber', a: '#a8480a', b: '#e69a2c', css: 'radial-gradient(circle at 40% 35%, #f3b451, #b35a10 70%)', rough: 0.14, clear: 1, map: cloudTex, emissive: '#2a0e00', silk: '#1d4a3a', clack: 2700 },
+    olive: { name: 'Olive', a: '#80552f', b: '#c79a62', css: 'radial-gradient(circle at 40% 35%, #d2a877, #7a512c 75%)', rough: 0.46, clear: 0.35, map: grainTex, emissive: '#000000', silk: '#6e1d25', clack: 1500 },
+    ebony: { name: 'Ebony', a: '#150f0c', b: '#33241b', css: 'radial-gradient(circle at 40% 35%, #4a372b, #120c09 75%)', rough: 0.26, clear: 0.9, map: grainTex, emissive: '#000000', silk: '#b58f42', clack: 2000 },
+  };
+  let variety = VARIETIES[store.get('variety')] ? store.get('variety') : 'amber';
+  const lin = hex => new T.Color(hex).convertSRGBToLinear();
+  function applyVariety(key) {
+    variety = key; store.set('variety', key);
+    const v = VARIETIES[key], ca = lin(v.a), cb = lin(v.b), c = new T.Color();
+    for (const mat of [beadMat, imamMat]) {
+      mat.roughness = v.rough; mat.clearcoat = v.clear; mat.map = v.map; mat.emissive = lin(v.emissive); mat.needsUpdate = true;
+    }
+    beadIdx.forEach((i, n) => { c.copy(ca).lerp(cb, 0.25 + TONE[i] * 0.75); beads.setColorAt(n, c); });
+    beads.instanceColor.needsUpdate = true;
+    imamMat.color.copy(ca).lerp(cb, 0.35);
+    threadMat.color.copy(lin(v.silk)); tasselMat.color.copy(lin(v.silk));
+    document.querySelectorAll('.swatch').forEach(b => b.setAttribute('aria-checked', String(b.dataset.key === key)));
+  }
+  const sw = $('swatches');
+  for (const [k, v] of Object.entries(VARIETIES)) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'swatch'; b.dataset.key = k; b.setAttribute('role', 'radio');
+    b.innerHTML = `<span class="dot" style="--c:${v.css}"></span><span>${v.name}</span>`;
+    b.addEventListener('click', () => applyVariety(k));
+    sw.appendChild(b);
+  }
+
+  // ── sound: a short filtered click for bead on bead ──
+  let soundOn = store.get('sound') !== 'off', actx = null;
+  function audio() { try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); return actx; } catch (e) { return null; } }
+  function clack(vol = 1, delay = 0) {
+    if (!soundOn) return;
+    const ac = audio(); if (!ac) return;
+    const sr = ac.sampleRate, len = Math.floor(sr * 0.05), buf = ac.createBuffer(1, len, sr), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (sr * 0.0035));
+    const src = ac.createBufferSource(); src.buffer = buf;
+    const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = VARIETIES[variety].clack * (0.9 + Math.random() * 0.2); bp.Q.value = 5;
+    const g = ac.createGain(); g.gain.value = 0.9 * vol;
+    src.connect(bp); bp.connect(g); g.connect(ac.destination);
+    src.start(ac.currentTime + delay);
+  }
+  function chime() {
+    if (!soundOn) return;
+    const ac = audio(); if (!ac) return;
+    const t = ac.currentTime;
+    for (const [f, a] of [[392, 0.12], [587.3, 0.08], [784, 0.04]]) {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(a, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.4);
+      o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + 2.5);
+    }
+  }
+
+  // ── counting ──
+  const PHRASES = [
+    { ar: 'سُبْحَانَ ٱللَّٰهِ', tr: 'Subḥāna-llāh', gs: 'Glory be to God' },
+    { ar: 'ٱلْحَمْدُ لِلَّٰهِ', tr: 'Al-ḥamdu li-llāh', gs: 'All praise belongs to God' },
+    { ar: 'ٱللَّٰهُ أَكْبَرُ', tr: 'Allāhu akbar', gs: 'God is the greatest' },
+    { ar: 'لَا إِلَٰهَ إِلَّا ٱللَّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ', tr: 'Lā ilāha illa-llāhu waḥdahu lā sharīka lah', gs: 'There is no god but God alone, He has no partner. The hundred is complete.' },
+  ];
+  let completed = false, round = 1, adv = null, queued = 0, shownPhrase = -1, mode = 'count', rehang = null;
+  const arDigits = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+
+  function updateUI() {
+    const c = completed ? 99 : beadNo(pin);
+    const block = completed ? 3 : c === 0 ? 0 : Math.floor((c - 1) / 33);
+    const inBlock = completed ? 100 : c - 33 * Math.min(block, 2);
+    if (block !== shownPhrase) {
+      const ph = PHRASES[block], el = $('phrase');
+      const apply = () => { $('ar').textContent = ph.ar; $('tr').textContent = ph.tr; $('gs').textContent = ph.gs; el.classList.remove('swap'); };
+      if (shownPhrase < 0 || matchMedia('(prefers-reduced-motion: reduce)').matches) apply();
+      else { el.classList.add('swap'); setTimeout(apply, 220); }
+      shownPhrase = block;
+    }
+    $('num').textContent = inBlock;
+    $('of').textContent = completed ? '' : '/ 33';
+    $('arnum').textContent = arDigits(inBlock);
+    for (let k = 0; k < 3; k++) $('b' + k).style.width = (clamp((c - 33 * k) / 33, 0, 1) * 100) + '%';
+    $('total').textContent = completed ? '99 of 99, then the tahlīl' : `${c} of 99`;
+    $('round').textContent = `Round ${round}`;
+  }
+
+  function startAdvance(auto) {
+    if (mode !== 'count' || rehang) return;
+    if (adv) { if (!auto) queued = Math.min(queued + 1, 6); return; }
+    W[pin] = INV[pin];
+    pin = (pin + 1) % NL;
+    W[pin] = 0;
+    const k = 3 * pin;
+    pinFrom = [X[k], X[k + 1], X[k + 2]]; pinTo = pinFrom.slice();
+    const dx = X[k] - PEG.x, dy = X[k + 1] - PEG.y, a0 = Math.atan2(dy, dx);
+    let da = Math.PI / 2 - a0;
+    while (da > Math.PI) da -= 2 * Math.PI;
+    while (da < -Math.PI) da += 2 * Math.PI;
+    adv = { t: 0, dur: (queued > 0 || auto) ? 0.1 : 0.17, a0, a1: a0 + da, r0: Math.hypot(dx, dy), r1: PEG_R + RAD[pin] + 0.001, z0: X[k + 2] };
+    if (!auto) { clack(1); try { navigator.vibrate && navigator.vibrate(6); } catch (e) {} }
+  }
+  function arrive() {
+    if (KIND[pin] === 1) { clack(0.6); startAdvance(true); return; }
+    if (pin === 0) { completed = true; chime(); }
+    else if (completed) { completed = false; round++; }
+    clack(0.45, 0.05);
+    updateUI();
+    if (queued > 0) { queued--; startAdvance(false); }
+  }
+
+  // per fixed step: advance arc, re-hanging, peg motion
+  function animate(dt) {
+    if (adv) {
+      adv.t += dt / adv.dur;
+      const e = easeOut(Math.min(1, adv.t));
+      const a = adv.a0 + (adv.a1 - adv.a0) * e, r = adv.r0 + (adv.r1 - adv.r0) * e;
+      pinTo = [PEG.x + Math.cos(a) * r, PEG.y + Math.sin(a) * r, adv.z0 * (1 - e)];
+      if (adv.t >= 1) { adv = null; arrive(); }
+    }
+    if (rehang) {
+      rehang.t += dt;
+      const tA = 1.1, top = pinTop(pin);
+      if (rehang.t < tA) {
+        const e = easeInOut(rehang.t / tA);
+        pinTo = rehang.from.map((v, c) => v + (top[c] - v) * e);
+      } else { pinTo = top; pegGoal = PEG_FRONT; }
+      bias = rehang.t > tA - 0.35 && rehang.t < tA + 0.8 ? 14 : 0;
+      if (rehang.t > tA + 1.3) { rehang = null; bias = 0; }
+    }
+    const sp = 6 * dt;
+    pegEnd += clamp(pegGoal - pegEnd, -sp, sp);
+  }
+
+  // ── modes ──
+  const CAMS = {
+    count: { tx: 0, ty: PEG.y - 0.6, tz: 0, dist: 4.6, az: 0.42, el: 0.12 },
+    hold: { tx: 0, ty: 0.12, tz: 0, dist: 5.2, az: 0.3, el: 0.8 },
+  };
+  const cam = Object.assign({}, CAMS.count), goal = Object.assign({}, CAMS.count);
+  function camPreset() {
+    const p = Object.assign({}, CAMS[mode]), asp = camera.aspect;
+    if (asp < 1) { p.dist *= Math.pow(1 / asp, 0.55); if (mode === 'count') p.ty = PEG.y - 0.35; }
+    Object.assign(goal, p);
+  }
+  const HINTS = {
+    count: 'Tap anywhere or press Space to pass one bead over the peg. Drag to turn the view.',
+    hold: 'Drag any bead to lift the strand. Drag empty space to turn the view, scroll to zoom.',
+  };
+  function setMode(m) {
+    if (m === mode) return;
+    mode = m;
+    $('modeCount').setAttribute('aria-pressed', String(m === 'count'));
+    $('modeHold').setAttribute('aria-pressed', String(m === 'hold'));
+    $('countGroup').hidden = m !== 'count';
+    $('hint').textContent = HINTS[m];
+    queued = 0;
+    if (m === 'hold') {
+      if (adv) { adv = null; }
+      rehang = null; bias = 0;
+      held = false; W[pin] = INV[pin];
+      pegGoal = PEG_BACK;
+    } else {
+      releaseGrab();
+      held = true; W[pin] = 0;
+      const k = 3 * pin;
+      pinFrom = [X[k], X[k + 1], X[k + 2]]; pinTo = pinFrom.slice();
+      pegGoal = PEG_BACK;
+      rehang = { t: 0, from: pinFrom.slice() };
+    }
+    camPreset();
+    setCursor();
+  }
+  $('modeCount').addEventListener('click', () => setMode('count'));
+  $('modeHold').addEventListener('click', () => setMode('hold'));
+  $('next').addEventListener('click', () => startAdvance(false));
+  $('sound').addEventListener('click', () => {
+    soundOn = !soundOn; store.set('sound', soundOn ? 'on' : 'off');
+    $('sound').setAttribute('aria-pressed', String(soundOn));
+    $('sound').textContent = soundOn ? 'Sound on' : 'Sound off';
+    if (soundOn) clack(0.6);
+  });
+  $('sound').setAttribute('aria-pressed', String(soundOn));
+  $('sound').textContent = soundOn ? 'Sound on' : 'Sound off';
+  $('reset').addEventListener('click', reset);
+
+  function settle(n) { for (let i = 0; i < n; i++) step(1 / 60); }
+  function reset() {
+    adv = null; queued = 0; rehang = null; bias = 0; releaseGrab();
+    pin = 0; completed = false; round = 1;
+    layoutHang(); settle(150);
+    if (mode === 'hold') { held = false; W[pin] = INV[pin]; pegGoal = PEG_BACK; }
+    updateUI();
+  }
+
+  // ── pointer: tap to count, drag beads in Hold mode, drag space to orbit ──
+  const ray = new T.Raycaster(), ndc = new T.Vector2(), plane = new T.Plane(), hitP = new T.Vector3();
+  function setRay(e) {
+    const r = cv.getBoundingClientRect();
+    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+  }
+  function pick(e) {
+    setRay(e);
+    const o = ray.ray.origin, d = ray.ray.direction;
+    let best = -1, bt = Infinity;
+    for (let i = 0; i < N; i++) {
+      const px = X[3 * i] - o.x, py = X[3 * i + 1] - o.y, pz = X[3 * i + 2] - o.z;
+      const t = px * d.x + py * d.y + pz * d.z;
+      if (t < 0) continue;
+      const cx = px - d.x * t, cy = py - d.y * t, cz = pz - d.z * t;
+      const rr = RAD[i] * 1.9 + 0.02;
+      if (cx * cx + cy * cy + cz * cz < rr * rr && t < bt) { bt = t; best = i; }
+    }
+    return best;
+  }
+  function releaseGrab() { if (grab >= 0) { if (!(held && grab === pin)) W[grab] = INV[grab]; grab = -1; } }
+  function setCursor(c) { cv.dataset.cursor = c || (mode === 'count' ? 'count' : ''); }
+  let drag = null;
+  cv.addEventListener('pointerdown', e => {
+    audio();
+    cv.focus({ preventScroll: true });
+    try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+    drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false };
+    if (mode === 'hold') {
+      const hit = pick(e);
+      if (hit >= 0) {
+        grab = hit; W[hit] = 0;
+        const k = 3 * hit;
+        grabFrom = [X[k], X[k + 1], X[k + 2]]; grabTo = grabFrom.slice();
+        camera.getWorldDirection(vB);
+        plane.setFromNormalAndCoplanarPoint(vB, vA.set(X[k], X[k + 1], X[k + 2]));
+        setCursor('grabbing');
+      }
+    }
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!drag) {
+      if (mode === 'hold') setCursor(pick(e) >= 0 ? 'grab' : '');
+      return;
+    }
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    drag.x = e.clientX; drag.y = e.clientY;
+    if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 6) drag.moved = true;
+    if (grab >= 0) {
+      setRay(e);
+      if (ray.ray.intersectPlane(plane, hitP)) grabTo = [clamp(hitP.x, -6, 6), Math.max(RAD[grab], Math.min(hitP.y, 8)), clamp(hitP.z, -6, 6)];
+    } else if (drag.moved) {
+      goal.az -= dx * 0.005;
+      goal.el = clamp(goal.el + dy * 0.004, -0.15, 1.4);
+    }
+  });
+  const endDrag = e => {
+    if (!drag) return;
+    if (grab >= 0) { releaseGrab(); setCursor(''); }
+    else if (!drag.moved && mode === 'count' && e.type === 'pointerup') startAdvance(false);
+    drag = null;
+  };
+  cv.addEventListener('pointerup', endDrag);
+  cv.addEventListener('pointercancel', endDrag);
+  cv.addEventListener('wheel', e => { e.preventDefault(); goal.dist = clamp(goal.dist * Math.exp(e.deltaY * 0.001), 1.6, 14); }, { passive: false });
+  document.addEventListener('keydown', e => {
+    const t = e.target;
+    if (t && t.tagName === 'BUTTON') return;
+    if (e.code === 'Space' || e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); audio(); startAdvance(false); }
+  });
+
+  function resize() {
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+    camPreset();
+  }
+  window.addEventListener('resize', resize);
+
+  // ── boot ──
+  applyVariety(variety);
+  resize();
+  Object.assign(cam, goal);
+  layoutHang();
+  settle(180);
+  updateUI();
+  setCursor();
+
+  let acc = 0, last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    acc += dt;
+    let n = 0;
+    while (acc >= 1 / 60 && n < 4) { animate(1 / 60); step(1 / 60); acc -= 1 / 60; n++; }
+    if (n === 4) acc = 0;
+    const k = 1 - Math.exp(-dt * 3.2);
+    for (const key in cam) cam[key] += (goal[key] - cam[key]) * k;
+    camera.position.set(cam.tx + cam.dist * Math.cos(cam.el) * Math.sin(cam.az), cam.ty + cam.dist * Math.sin(cam.el), cam.tz + cam.dist * Math.cos(cam.el) * Math.cos(cam.az));
+    camera.lookAt(cam.tx, cam.ty, cam.tz);
+    updateMeshes();
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+  updateMeshes();
+  renderer.render(scene, camera);
+  document.body.classList.add('ready');
+  requestAnimationFrame(frame);
+})();
+</script>
