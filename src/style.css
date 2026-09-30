@@ -37,24 +37,24 @@ body.begun .dhikr, body.begun .rail, body.begun .hint { opacity: 1; transition-d
 .intro { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; background: var(--night);
   transition: transform 1.2s cubic-bezier(.7, 0, .2, 1), opacity .9s ease .35s; }
 body.begun .intro { transform: translateY(-100%); opacity: 0; pointer-events: none; }
-.intro-inner { text-align: center; padding: var(--gutter); width: min(560px, 100%); }   /* fixed width: no re-centring when fonts arrive */
-.intro-title { font: italic 400 clamp(68px, 12vw, 136px)/1 var(--serif); margin: 0; }
-.intro-line { font: italic 400 clamp(17px, 2vw, 20px)/1.4 var(--serif); color: var(--muted); margin: 18px 0 0; }
+.intro-inner { text-align: center; padding: var(--gutter); width: min(820px, 100%); }   /* fixed width: no re-centring when fonts arrive */
+.intro-title { font: italic 400 clamp(88px, 15vw, 184px)/1 var(--serif); margin: 0; }
+.intro-line { font: italic 400 clamp(21px, 2.6vw, 30px)/1.35 var(--serif); color: var(--muted); margin: 22px 0 0; text-wrap: balance; }
 .intro-title, .intro-line { opacity: 0; transform: translateY(10px); transition: opacity 1.1s ease, transform 1.3s cubic-bezier(.2, .75, .2, 1); }
 .intro-line { transition-delay: .25s; }
 body.fonts .intro-title, body.fonts .intro-line { opacity: 1; transform: none; }
-.intro-load { width: 180px; height: 1px; margin: 40px auto 0; background: var(--line); transition: opacity .6s ease; }
+.intro-load { width: 220px; height: 1px; margin: 48px auto 0; background: var(--line); transition: opacity .6s ease; }
 .intro-load i { display: block; height: 100%; width: 0; background: var(--amber); transition: width .45s ease; }
 body.loaded .intro-load { opacity: 0; }
-.intro-begin { display: inline-flex; align-items: center; margin-top: 26px; padding: 10px 16px; border: 0; background: none; cursor: pointer;
-  font: 400 13px/1 var(--ui); letter-spacing: .06em; color: var(--muted);
+.intro-begin { display: inline-flex; align-items: center; margin-top: 34px; padding: 10px 16px; border: 0; background: none; cursor: pointer;
+  font: 400 clamp(15px, 1.35vw, 18px)/1 var(--ui); letter-spacing: .06em; color: var(--muted);
   opacity: 0; visibility: hidden; transform: translateY(8px); transition: opacity .8s ease, transform .9s cubic-bezier(.2, .75, .2, 1), color .3s ease, visibility 0s .8s; }
 body.loaded .intro-begin { opacity: 1; visibility: visible; transform: none; transition-delay: .15s, .15s, 0s, 0s; }
 .intro-begin:hover, .intro-begin:focus-visible { color: var(--ink); }
 /* it's focused for keyboard users on load; brighter text shows focus without boxing the line */
 .intro-begin:focus-visible { outline: none; }
 .intro-begin kbd { display: inline-block; margin: 0 .55em; padding: 6px 12px 5px; border: 1px solid var(--line-strong); border-radius: 4px;
-  font: 500 12px/1 var(--ui); letter-spacing: .08em; color: var(--ink); }
+  font: 500 .85em/1 var(--ui); letter-spacing: .08em; color: var(--ink); }
 .intro-begin .on-touch { display: none; }
 @media (hover: none) and (pointer: coarse) {
   .intro-begin .on-keys { display: none; }
