@@ -19,7 +19,10 @@ export async function open(browser, variety, mode) {
   await page.addInitScript(v => localStorage.setItem('misbaha.variety', v), variety);
   await page.goto(URL);
   await page.waitForFunction(() => window.__stage);
-  await page.waitForTimeout(1200);
+  // past the title screen: Begin, then wait for the lamp to fade up and the camera to arrive
+  await page.waitForSelector('body.loaded');
+  await page.click('#beginSilent');
+  await page.waitForTimeout(3600);
   if (mode === 'hold') await page.click('#modeHold');
   await page.waitForTimeout(mode === 'hold' ? 6000 : 3000);
   await page.evaluate(() => {

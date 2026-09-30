@@ -1,3 +1,10 @@
+/* Fonts are self-hosted (Fontsource) so nothing depends on a third-party request, and the
+   page reveals text only after they load (intro.js), so nothing appears unstyled or jumps.
+   Amiri: Arabic, transliteration and display. Instrument Sans: labels and controls. */
+@import '@fontsource/amiri/400.css';
+@import '@fontsource/amiri/400-italic.css';
+@import '@fontsource-variable/instrument-sans/index.css';
+
 /* Layout: full-bleed night scene. The dhikr phrase and count float top-left like a page of a prayer book,
    a slim control rail sits top-right (bottom sheet on phones), and a one-line hint sits bottom-left. */
 :root {
@@ -12,7 +19,7 @@
   --panel: rgba(15, 18, 23, .7);
   --arabic: "Amiri", "Noto Naskh Arabic", "Geeza Pro", "Traditional Arabic", serif;
   --serif: "Amiri", "Iowan Old Style", Georgia, serif;
-  --ui: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --ui: "Instrument Sans Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
   --gutter: clamp(16px, 3vw, 40px);
   color-scheme: dark;
 }
@@ -21,6 +28,29 @@
 html, body { height: 100%; margin: 0; background: var(--night); color: var(--ink); }
 body { font: 13px/1.45 var(--ui); overflow: hidden; -webkit-font-smoothing: antialiased; }
 button { font: inherit; color: inherit; }
+
+/* the page before Begin: header, rail and hint wait, then fade in as the camera arrives */
+.dhikr, .rail, .hint { opacity: 0; transition: opacity 1s ease; }
+body.begun .dhikr, body.begun .rail, body.begun .hint { opacity: 1; transition-delay: 1.9s; }
+
+/* ── title screen ── */
+.intro { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; background: var(--night);
+  transition: transform 1.2s cubic-bezier(.7, 0, .2, 1), opacity .9s ease .35s; }
+body.begun .intro { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+.intro-inner { text-align: center; padding: var(--gutter); width: min(560px, 100%); }   /* fixed width: no re-centring when fonts arrive */
+.intro-title { font: italic 400 clamp(68px, 12vw, 136px)/1 var(--serif); margin: 0; }
+.intro-line { font: italic 400 clamp(17px, 2vw, 20px)/1.4 var(--serif); color: var(--muted); margin: 18px 0 0; }
+.intro-title, .intro-line { opacity: 0; transform: translateY(10px); transition: opacity 1.1s ease, transform 1.3s cubic-bezier(.2, .75, .2, 1); }
+.intro-line { transition-delay: .25s; }
+body.fonts .intro-title, body.fonts .intro-line { opacity: 1; transform: none; }
+.intro-load { width: 180px; height: 1px; margin: 40px auto 0; background: var(--line); transition: opacity .6s ease; }
+.intro-load i { display: block; height: 100%; width: 0; background: var(--amber); transition: width .45s ease; }
+body.loaded .intro-load { opacity: 0; }
+.intro-begin { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 22px;
+  opacity: 0; visibility: hidden; transform: translateY(8px); transition: opacity .8s ease, transform .9s cubic-bezier(.2, .75, .2, 1), visibility 0s .8s; }
+body.loaded .intro-begin { opacity: 1; visibility: visible; transform: none; transition-delay: .15s, .15s, 0s; }
+.intro-begin { max-width: 400px; margin-inline: auto; }
+.intro-begin .btn, .intro-begin .btn.primary { flex: 1 1 160px; width: auto; min-height: 46px; padding: 0 18px; font-size: 14px; }
 
 #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; opacity: 0; transition: opacity .9s ease; }
 body.ready #gl { opacity: 1; }
@@ -36,8 +66,14 @@ body.ready .vignette { opacity: 1; }
 .dhikr { position: fixed; top: calc(var(--gutter) + env(safe-area-inset-top, 0px)); left: var(--gutter);
   width: min(430px, calc(100vw - 2 * var(--gutter))); pointer-events: none; }
 .eyebrow { font: 500 10.5px/1 var(--ui); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
-.phrase { transition: opacity .35s ease, transform .35s ease; }
-.phrase.swap { opacity: 0; transform: translateY(6px); }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* phrases reveal word by word from below; the old phrase fades out first */
+.phrase { transition: opacity .25s ease; }
+.phrase.out { opacity: 0; }
+.phrase .w { display: inline-block; opacity: 0; transform: translateY(.45em);
+  transition: opacity .6s ease, transform .75s cubic-bezier(.2, .75, .2, 1); transition-delay: calc(var(--i) * 70ms); }
+.phrase.in .w { opacity: 1; transform: none; }
 /* Amiri stacks marks high: the shadda + small alif over the lām of Allāh rises ~0.56em above
    the line box. A margin in em keeps ~0.14em of air above it at every size, and line-height
    1.55 keeps a wrapped phrase's two lines of marks apart. */
@@ -45,9 +81,16 @@ body.ready .vignette { opacity: 1; }
 .translit { font: italic 400 21px/1.2 var(--serif); margin: 4px 0 0; }
 .gloss { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
 .count { display: flex; align-items: baseline; gap: 10px; margin-top: 22px; }
-.count .num { font: 400 64px/.9 var(--serif); font-variant-numeric: tabular-nums; min-width: 1.2ch; }
+.count .num { font: 400 64px/.9 var(--serif); --lh: .9em; --dw: .532em; }   /* --dw: Amiri's (tabular) digit width */
 .count .of { font: 400 18px/1 var(--serif); color: var(--muted); }
-.count .arnum { font: 400 26px/1 var(--arabic); color: var(--faint); margin-left: 6px; }
+.count .arnum { font: 400 26px/1 var(--arabic); color: var(--faint); margin-left: 6px; --lh: 1em; --dw: .585em; }
+/* odometer: each digit is a column; a hidden copy of the digit sets width and baseline, and a
+   clipped strip of 0–9 rolls over it */
+.od-col { position: relative; display: inline-block; width: var(--dw); text-align: center; }
+.od-ghost { visibility: hidden; }
+.od-win { position: absolute; left: 0; right: 0; top: 0; height: var(--lh); overflow: hidden; }
+.od-strip { position: absolute; left: 0; right: 0; top: 0; transition: transform .6s cubic-bezier(.2, .8, .2, 1); }
+.od-strip > span { display: block; height: var(--lh); line-height: var(--lh); }
 .bars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; width: 234px; max-width: 100%; margin-top: 14px; }
 .bars i { display: block; height: 2px; background: var(--line); position: relative; overflow: hidden; }
 .bars b { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--amber); transition: width .25s ease; }
@@ -109,5 +152,6 @@ button:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
   .rail { gap: 10px; padding: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  #gl, .vignette, .phrase, .bars b { transition: none; }
+  #gl, .vignette, .phrase, .phrase .w, .bars b, .od-strip, .intro, .intro-title, .intro-line, .intro-begin,
+  .dhikr, .rail, .hint { transition: none !important; }
 }

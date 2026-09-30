@@ -272,6 +272,66 @@ Mistakes on the way, kept here because they teach something:
 - Lightening the core washed the colour out, because tone mapping desaturates bright
   colours. Shifting the hue instead kept it saturated.
 
+## Stage 3: the opening and typography
+
+**The title screen** (`intro` in `ui.js`, the boot sequence in `main.js`).
+"Misbaḥa" in Amiri italic, one line, a thin loading bar, then "Begin with sound" and
+"Begin in silence". The bar reports real work, not a timer. Boot runs in steps and yields
+a frame between them so the bar can move:
+1. textures;
+2. the room and the strand;
+3. settling the physics;
+4. compiling every shader ahead of time (`renderer.compileAsync`), so the first lit frame
+   doesn't stall;
+5. fonts.
+
+The Begin click is also the user gesture browsers require before they allow audio.
+
+**Begin.**
+- The title lifts away (a CSS transform).
+- The lamp fades up from darkness over 2.2 s. `setLightLevel()` in `scene.js` scales
+  everything that belongs to the lamp together: the spotlight, the wall glow, the
+  reflections, the amber's inner glow (`uLampLevel`) and the dust.
+- The camera glides from a wide shot of the room to the strand in 3 s. It's a scripted
+  move (`rig.glide`) with ease-in-out cubic, which starts and ends at zero speed and
+  can't overshoot.
+- The header and controls fade in as the camera arrives.
+- Counting is blocked until Begin.
+
+**Fonts without jumps.**
+- Fonts are self-hosted through Fontsource: Amiri for Arabic, transliteration and
+  display; Instrument Sans for labels.
+- Each face is split by character range, so a visitor downloads only what the page uses.
+  The Arabic face is 109 kB; the Latin faces are 10–30 kB each.
+- `loadFonts()` asks for the exact faces in use, and text is revealed only once they've
+  arrived, with a 3 s timeout so a slow font can't block the page.
+- The one layout shift left, the invisible title box narrowing as fonts arrived, was
+  found with the browser's `layout-shift` entries and removed with a fixed width.
+
+**Phrases and numbers.**
+- Phrase changes fade the old phrase, then reveal the new one word by word from below:
+  Arabic, then transliteration, then meaning, 70 ms apart. The Arabic is split only at
+  spaces, so letters within a word stay joined.
+- The count and its Arabic-Indic numeral roll like an odometer. Each digit is a column
+  whose hidden copy of the digit sets width and baseline, while a clipped strip of 0–9
+  slides over it.
+- Column widths are Amiri's own digit widths: 0.532 em for Western digits, 0.585 em for
+  Arabic-Indic, measured with `measureText`.
+- Screen readers get plain text ("12 of 33") from a hidden span, not the strips.
+
+**Reduced motion.** No lift, no glide, no roll and no reveal: Begin goes straight to the
+lit scene.
+
+**Measured** (production build, fresh cache, headless Chrome on this Mac's GPU):
+
+| Connection | Title shows | Begin ready | First bead counted |
+| --- | --- | --- | --- |
+| Broadband, 20 Mbps / 20 ms | 0.60 s | 0.68 s | 1.1 s |
+| Good 4G, 9 Mbps / 85 ms | 0.74 s | 0.82 s | 1.0 s |
+| Slow 4G, 1.6 Mbps / 150 ms, CPU ÷4, phone size | 3.07 s | 3.20 s | 3.4 s |
+
+The spec's target is under 8 s. The whole page is 336 kB compressed. Layout shift is 0.
+
 ## Interview questions this answers
 
 - *Why position-based dynamics over a force-based spring model?* It stays stable under
@@ -298,6 +358,14 @@ Mistakes on the way, kept here because they teach something:
 - *How do you judge "looks like the real thing"?* Measure the colour of reference
   photographs and compare distributions (median and spread of hue, chroma and
   lightness), then check by eye.
+- *How do you avoid a flash of unstyled text?* Self-host the fonts, request the exact faces
+  with `document.fonts.load`, reveal text only when they've arrived (with a timeout), and
+  make sure hidden-but-laid-out text can't shift layout when the font swaps.
+- *Why a real loading bar?* It reports the actual steps: textures, physics, shader
+  compilation. Compiling shaders before the first lit frame removes a visible stutter.
+- *How do you measure "loads in under 8 seconds"?* Throttle the network and CPU with the
+  Chrome DevTools Protocol on a production build with an empty cache, and time
+  navigation → ready → first bead.
 - *How are Islamic star patterns constructed?* One classical way is Hankin's method:
   rays from each edge midpoint of a polygon tiling at a contact angle, stopped where
   they meet. Changing the angle changes the whole character of the pattern.

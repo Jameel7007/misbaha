@@ -18,13 +18,24 @@ const store = {
 const easeOut = t => 1 - Math.pow(1 - t, 3);
 const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
+const yieldFrame = () => new Promise(r => requestAnimationFrame(() => r()));
+const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Fonts start loading at once; the title appears when they're ready.
+const fonts = ui.loadFonts();
 let stage;
 try { stage = createStage(ui.canvas); } catch (e) { ui.showFallback(); }
 if (stage) boot(stage);
 
-function boot(stage) {
+// Boot runs in steps, yielding a frame between them so the loading bar can move:
+// textures → room and strand → settle the physics → compile every shader → fonts.
+async function boot(stage) {
   const { renderer, scene, camera } = stage;
+  ui.intro.progress(0.08);
+  await yieldFrame();
   const tex = makeTextures(renderer);
+  ui.intro.progress(0.45);
+  await yieldFrame();
   const room = addRoom(scene, tex, stage.dimEnv);
   // dev-only handle for tuning light levels live; stripped from production builds
   if (import.meta.env.DEV) window.__stage = { ...stage, ...room };
@@ -36,11 +47,12 @@ function boot(stage) {
   // ── counting state ──
   // adv: the bead currently travelling onto the peg; queued: taps made while it travels
   // rehang: the lift back onto the peg after Hold mode
-  let mode = 'count', completed = false, round = 1, adv = null, queued = 0, rehang = null;
+  // started: the title screen has been dismissed (no counting before Begin)
+  let mode = 'count', completed = false, round = 1, adv = null, queued = 0, rehang = null, started = false;
   const showCount = () => ui.showCount(beadNo(sim.pin), completed, round);
 
   function startAdvance(auto) {
-    if (mode !== 'count' || rehang) return;
+    if (!started || mode !== 'count' || rehang) return;
     if (adv) { if (!auto) queued = Math.min(queued + 1, 6); return; }
     passPin((sim.pin + 1) % NL);
     const k = 3 * sim.pin;
@@ -154,10 +166,36 @@ function boot(stage) {
   setVariety(VARIETIES[saved] ? saved : 'amber');
   resize();
   rig.snap();
+  ui.intro.progress(0.6);
+  await yieldFrame();
   layoutHang();
   settle(180);
   showCount();
   input.setCursor();
+  ui.intro.progress(0.72);
+  await yieldFrame();
+  // the room starts dark; compile every shader now so the first lit frame doesn't stall
+  stage.setLightLevel(0); dust.setLevel(0);
+  rig.update(0); strand.update();
+  await renderer.compileAsync(scene, camera);
+  ui.intro.progress(0.92);
+  await fonts;
+  ui.intro.progress(1);
+
+  // ── Begin: the title lifts away, the lamp fades up, the camera glides in ──
+  let lampUp = null;
+  ui.intro.onBegin(withSound => {
+    if (started) return;
+    soundOn = withSound; store.set('sound', soundOn ? 'on' : 'off');
+    setSoundEnabled(soundOn); ui.showSound(soundOn);
+    unlockAudio();   // this click is the user gesture browsers require for audio
+    started = true;
+    ui.intro.begun();
+    if (still()) { stage.setLightLevel(1); dust.setLevel(1); ui.revealPhrase(); return; }
+    lampUp = { t: 0, delay: 0.3, dur: 2.2 };
+    rig.glide('intro', 3.0);
+    setTimeout(ui.revealPhrase, 2000);
+  });
 
   let acc = 0, last = performance.now();
   function frame(now) {
@@ -166,15 +204,20 @@ function boot(stage) {
     let n = 0;
     while (acc >= 1 / 60 && n < 4) { animate(1 / 60); step(1 / 60); acc -= 1 / 60; n++; }
     if (n === 4) acc = 0;
+    if (lampUp) {
+      lampUp.t += dt;
+      const e = easeInOut(clamp((lampUp.t - lampUp.delay) / lampUp.dur, 0, 1));
+      stage.setLightLevel(e); dust.setLevel(e);
+      if (e >= 1) lampUp = null;
+    }
     rig.update(dt);
     dust.update(dt);
     strand.update();
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   }
-  rig.update(0);
-  strand.update();
   renderer.render(scene, camera);
   ui.markReady();
   requestAnimationFrame(frame);
+  ui.intro.loaded();
 }

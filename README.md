@@ -10,6 +10,7 @@ the single-file version this project started from is [reference/baseline.html](r
 npm install
 npm run dev            # http://localhost:5173 (the Claude launch config uses port 5186)
 npm run build          # dist/ — normal multi-file site
+npm run preview        # serve dist/ (the Claude launch config uses port 5188)
 npm run build:single   # dist-single/index.html — one self-contained file
 
 npm run check:palette     # the palette's colour rules, on the daylight material colours
@@ -39,5 +40,6 @@ How it all fits together: [docs/architecture.md](docs/architecture.md).
 
 - [x] Stage 0: Vite project, ES modules, single-file build
 - [x] Stage 1: Art direction and lighting
-- [x] Stage 2: Amber that looks like amber (waiting for your check in a real browser)
-- [ ] Stage 3–9: see the spec
+- [x] Stage 2: Amber that looks like amber
+- [x] Stage 3: Opening and typography (waiting for your check in a real browser)
+- [ ] Stage 4–9: see the spec

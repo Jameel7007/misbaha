@@ -64,7 +64,7 @@ function amberGlow(material, glow, cloudMap) {
           // lower side, the bright crescent that makes clear amber and glass read as translucent
           vec3 downView = normalize((viewMatrix * vec4(0.0, -1.0, 0.0, 0.0)).xyz);
           float exitGlow = smoothstep(0.15, 0.85, dot(normal, downView)) * pow(facing, 0.6) * 0.55 * clear;
-          totalEmissiveRadiance += coreColour * (core + exitGlow) * uGlow * vLampGate * (1.0 - 0.75 * vCloud);
+          totalEmissiveRadiance += coreColour * (core + exitGlow) * uGlow * vLampGate * uLampLevel * (1.0 - 0.75 * vCloud);
         }`);
   };
   material.customProgramCacheKey = () => 'amber-glow';

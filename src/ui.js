@@ -1,6 +1,9 @@
-// Everything in the DOM: the dhikr header, the control rail, the hint and the fallback.
+// Everything in the DOM: the title screen, the dhikr header, the control rail, the hint and
+// the fallback.
 const $ = id => document.getElementById(id);
 export const canvas = $('gl');
+const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
 
 const PHRASES = [
   { ar: 'سُبْحَانَ ٱللَّٰهِ', tr: 'Subḥāna-llāh', gs: 'Glory be to God' },
@@ -12,10 +15,61 @@ const HINTS = {
   count: 'Tap anywhere or press Space to pass one bead over the peg. Drag to turn the view.',
   hold: 'Drag any bead to lift the strand. Drag empty space to turn the view, scroll to zoom.',
 };
-const arDigits = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+const WESTERN = '0123456789', ARABIC_INDIC = '٠١٢٣٤٥٦٧٨٩';
+const arDigits = n => String(n).replace(/\d/g, d => ARABIC_INDIC[d]);
 const clamp01 = v => Math.max(0, Math.min(1, v));
 
-let shownPhrase = -1;
+// ── odometer: each digit rolls on a strip of 0–9 ──
+// A hidden copy of the digit gives the column its width and baseline; the strip rolls in a
+// clipped window over it. Columns are right-aligned: added or removed on the left.
+function odometer(el, glyphs) {
+  const cols = [];
+  const make = () => {
+    const c = document.createElement('span');
+    c.className = 'od-col';
+    c.innerHTML = `<span class="od-ghost"></span><span class="od-win"><span class="od-strip">${[...glyphs].map(g => `<span>${g}</span>`).join('')}</span></span>`;
+    return c;
+  };
+  const roll = (c, d, animate) => {
+    c.firstChild.textContent = d;
+    const strip = c.querySelector('.od-strip');
+    strip.style.transition = animate && !still() ? '' : 'none';
+    strip.style.transform = `translateY(calc(${-glyphs.indexOf(d)} * var(--lh)))`;
+  };
+  return (text, animate) => {
+    const digits = [...text];
+    while (cols.length > digits.length) cols.shift().remove();
+    while (cols.length < digits.length) { const c = make(); el.prepend(c); cols.unshift(c); roll(c, glyphs[0], false); c.offsetWidth; }
+    digits.forEach((d, i) => roll(cols[i], d, animate));
+  };
+}
+const numOdo = odometer($('num'), WESTERN), arOdo = odometer($('arnum'), ARABIC_INDIC);
+
+// ── phrases: revealed word by word from below ──
+function fillWords(el, text, start) {
+  el.textContent = '';
+  text.split(' ').forEach((w, i) => {
+    if (i) el.append(' ');
+    const s = document.createElement('span');
+    s.className = 'w'; s.style.setProperty('--i', start + i); s.textContent = w;
+    el.append(s);
+  });
+  return start + text.split(' ').length;
+}
+function setPhrase(ph) {
+  let i = fillWords($('ar'), ph.ar, 0);
+  i = fillWords($('tr'), ph.tr, i);
+  fillWords($('gs'), ph.gs, i);
+}
+let revealed = false;
+// the first phrase waits for the header to appear after Begin
+export async function revealPhrase() {
+  revealed = true;
+  await nextFrame();
+  $('phrase').classList.add('in');
+}
+
+let shownPhrase = -1, counted = false;
 // c: beads counted this round (0..99); completed: the imam was reached after bead 99
 export function showCount(c, completed, round) {
   if (completed) c = 99;
@@ -23,14 +77,21 @@ export function showCount(c, completed, round) {
   const inBlock = completed ? 100 : c - 33 * Math.min(block, 2);
   if (block !== shownPhrase) {
     const ph = PHRASES[block], el = $('phrase');
-    const apply = () => { $('ar').textContent = ph.ar; $('tr').textContent = ph.tr; $('gs').textContent = ph.gs; el.classList.remove('swap'); };
-    if (shownPhrase < 0 || matchMedia('(prefers-reduced-motion: reduce)').matches) apply();
-    else { el.classList.add('swap'); setTimeout(apply, 220); }
+    if (shownPhrase < 0 || !revealed || still()) { setPhrase(ph); if (revealed) el.classList.add('in'); }
+    else {
+      el.classList.add('out');
+      setTimeout(async () => {
+        el.classList.remove('in', 'out'); setPhrase(ph);
+        await nextFrame(); el.offsetWidth; el.classList.add('in');
+      }, 260);
+    }
     shownPhrase = block;
   }
-  $('num').textContent = inBlock;
+  numOdo(String(inBlock), counted);
+  arOdo(arDigits(inBlock), counted);
+  counted = true;
+  $('countText').textContent = completed ? '100: the tahlīl' : `${inBlock} of 33`;
   $('of').textContent = completed ? '' : '/ 33';
-  $('arnum').textContent = arDigits(inBlock);
   for (let k = 0; k < 3; k++) $('b' + k).style.width = (clamp01((c - 33 * k) / 33) * 100) + '%';
   $('total').textContent = completed ? '99 of 99, then the tahlīl' : `${c} of 99`;
   $('round').textContent = `Round ${round}`;
@@ -75,5 +136,36 @@ export function bindControls({ onMode, onNext, onSound, onReset }) {
   });
 }
 
-export function showFallback() { $('fallback').hidden = false; canvas.hidden = true; }
+export function showFallback() { $('fallback').hidden = false; canvas.hidden = true; $('intro').hidden = true; }
 export function markReady() { document.body.classList.add('ready'); }
+
+// ── title screen ──
+// Loads the exact faces the page uses and resolves when they're ready (or after 3 s, so a
+// slow font can never block the page). Text is revealed only after, so nothing jumps.
+export function loadFonts() {
+  const faces = [
+    document.fonts.load('italic 400 1em Amiri', 'Misbaḥa Subḥāna-llāh'),
+    document.fonts.load('400 1em Amiri', 'سُبْحَانَ ٱللَّٰهِ ٠١٢٣٤٥٦٧٨٩ 0123456789'),
+    document.fonts.load('500 1em "Instrument Sans Variable"', 'Count Hold Begin'),
+  ];
+  const timeout = new Promise(r => setTimeout(r, 3000));
+  return Promise.race([Promise.all(faces).then(() => document.fonts.ready), timeout])
+    .then(() => document.body.classList.add('fonts'));
+}
+export const intro = {
+  progress(k) { $('introBar').style.width = (clamp01(k) * 100).toFixed(1) + '%'; },
+  loaded() {
+    document.body.classList.add('loaded');
+    $('introStatus').textContent = 'Ready. Begin with sound, or begin in silence.';
+    $('beginSound').focus({ preventScroll: true });
+  },
+  onBegin(cb) {
+    $('beginSound').addEventListener('click', () => cb(true));
+    $('beginSilent').addEventListener('click', () => cb(false));
+  },
+  begun() {
+    document.body.classList.add('begun');
+    $('intro').setAttribute('aria-hidden', 'true');
+    canvas.focus({ preventScroll: true });
+  },
+};

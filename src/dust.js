@@ -10,7 +10,7 @@ export const DUST = true;           // set false to remove the motes entirely
 const COUNT = 160;
 
 export function createDust(scene, lamp, renderer) {
-  if (!DUST) return { update() {} };
+  if (!DUST) return { update() {}, setLevel() {} };
   const R = rng(7);
   const base = new Float32Array(3 * COUNT), seed = new Float32Array(4 * COUNT);
   for (let i = 0; i < COUNT; i++) {
@@ -32,11 +32,12 @@ export function createDust(scene, lamp, renderer) {
       uCosOuter: { value: Math.cos(lamp.angle) },
       uCosInner: { value: Math.cos(lamp.angle * (1 - lamp.penumbra)) },
       uPx: { value: renderer.getPixelRatio() },
+      uLevel: { value: 1 },   // follows the lamp's brightness
       uColor: { value: new Color(LAMP_HEX).lerp(new Color('#ffffff'), 0.25) },   // the lamp's light, a touch paler
     },
     vertexShader: /* glsl */`
       attribute vec4 seed;
-      uniform float uTime, uCosOuter, uCosInner, uPx;
+      uniform float uTime, uCosOuter, uCosInner, uPx, uLevel;
       uniform vec3 uLampPos, uLampDir;
       varying float vAlpha;
       void main() {
@@ -52,7 +53,7 @@ export function createDust(scene, lamp, renderer) {
         gl_PointSize = max(2.0 * uPx, (0.012 + 0.008 * seed.w) * uPx * projectionMatrix[1][1] * 400.0 / -mv.z);
         // fade out near the camera, toward the edges of the pool of light,
         // and near the top and bottom of the drift range, so wrapping around never pops
-        vAlpha = cone * 0.32 * smoothstep(0.6, 2.0, -mv.z) * smoothstep(0.3, 1.3, p.y) * (1.0 - smoothstep(8.3, 9.3, p.y));
+        vAlpha = uLevel * cone * 0.32 * smoothstep(0.6, 2.0, -mv.z) * smoothstep(0.3, 1.3, p.y) * (1.0 - smoothstep(8.3, 9.3, p.y));
       }`,
     fragmentShader: /* glsl */`
       uniform vec3 uColor;
@@ -72,5 +73,6 @@ export function createDust(scene, lamp, renderer) {
   const still = matchMedia('(prefers-reduced-motion: reduce)');
   return {
     update(dt) { if (!still.matches) mat.uniforms.uTime.value += dt; },
+    setLevel(k) { mat.uniforms.uLevel.value = k; },
   };
 }

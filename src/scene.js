@@ -50,7 +50,7 @@ export function createStage(canvas) {
   }
   // r169 ignores a material's envMapIntensity when it only inherits scene.environment,
   // so surfaces that need less reflected light hold the map themselves
-  const dimEnv = intensity => ({ envMap: scene.environment, envMapIntensity: intensity });
+  const dimEnv = intensity => ({ envMap: scene.environment, envMapIntensity: intensity, userData: { baseEnv: intensity } });
 
   const L = LIGHTS.lamp;
   const lamp = new SpotLight(LAMP_COLOUR, L.intensity, 0, L.angle, L.penumbra, 2);
@@ -79,6 +79,7 @@ export function createStage(canvas) {
     uCosOuter: { value: Math.cos(L.angle * 1.15) },
     uCosInner: { value: Math.cos(L.angle * (1 - L.penumbra)) },
     uGateFloor: { value: 0.1 },
+    uLampLevel: { value: 1 },   // the whole lamp's brightness, 0 → 1 as it fades up at the start
   };
   // chains after any shader edit the material already has (the amber glow uses the gate)
   function gateToLamp(material) {
@@ -96,7 +97,7 @@ export function createStage(canvas) {
           gateWorld = modelMatrix * gateWorld;
           vLampGate = mix(uGateFloor, 1.0, smoothstep(uCosOuter, uCosInner, dot(normalize(gateWorld.xyz - uLampPos), uLampDir)));`);
       shader.fragmentShader = shader.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying float vLampGate;')
+        .replace('#include <common>', '#include <common>\nvarying float vLampGate;\nuniform float uLampLevel;')
         .replace('#include <lights_fragment_maps>', `#include <lights_fragment_maps>
           #if defined( RE_IndirectDiffuse )
             iblIrradiance *= vLampGate;
@@ -112,7 +113,17 @@ export function createStage(canvas) {
     material.needsUpdate = true;
   }
 
-  return { renderer, scene, camera, lamp, glow, dimEnv, gateToLamp };
+  // 0 = the room in darkness, 1 = the lamp fully up: the lamp, the wall glow, reflections
+  // (scene-wide and per-material) and anything gated to the lamp (the amber's inner glow)
+  function setLightLevel(k) {
+    lamp.intensity = L.intensity * k;
+    glow.intensity = G.intensity * k;
+    scene.environmentIntensity = k;
+    gate.uLampLevel.value = k;
+    scene.traverse(o => { const m = o.material; if (m && m.userData.baseEnv !== undefined) m.envMapIntensity = m.userData.baseEnv * k; });
+  }
+
+  return { renderer, scene, camera, lamp, glow, dimEnv, gateToLamp, setLightLevel };
 }
 
 // The room's surfaces: a slate floor, a prayer rug laid with its top toward the wall (as
@@ -163,28 +174,41 @@ export function addRoom(scene, tex, dimEnv) {
   return { floor, rug, wall };
 }
 
-// orbit camera that eases toward a goal; one preset per mode
+// orbit camera that eases toward a goal; one preset per mode, plus the wide opening shot
+const easeInOutCubic = t => t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
 export function createRig(camera) {
   const CAMS = {
     count: { tx: 0, ty: PEG.y - 0.6, tz: 0, dist: 4.6, az: 0.42, el: 0.12 },
     hold: { tx: 0, ty: 0.12, tz: 0, dist: 5.2, az: 0.3, el: 0.8 },
+    intro: { tx: -0.6, ty: 3.4, tz: 0.8, dist: 13.5, az: 0.8, el: 0.3 },   // the room: wall, rug, strand
+  };
+  const params = mode => {
+    const p = Object.assign({}, CAMS[mode]), asp = camera.aspect;
+    if (asp < 1) { p.dist *= Math.pow(1 / asp, 0.55); if (mode === 'count') p.ty = PEG.y - 0.35; }
+    return p;
   };
   const cam = Object.assign({}, CAMS.count), goal = Object.assign({}, CAMS.count);
+  let glide = null;
   return {
-    preset(mode) {
-      const p = Object.assign({}, CAMS[mode]), asp = camera.aspect;
-      if (asp < 1) { p.dist *= Math.pow(1 / asp, 0.55); if (mode === 'count') p.ty = PEG.y - 0.35; }
-      Object.assign(goal, p);
-    },
-    snap() { Object.assign(cam, goal); },
+    preset(mode) { Object.assign(goal, params(mode)); },
+    snap() { Object.assign(cam, goal); glide = null; },
+    // a scripted move from another preset to the goal: eased in and out, so no overshoot
+    glide(from, seconds) { glide = { from: params(from), t: 0, dur: seconds }; Object.assign(cam, glide.from); },
     orbit(dx, dy) {
       goal.az -= dx * 0.005;
       goal.el = clamp(goal.el + dy * 0.004, -0.15, 1.4);
     },
     zoom(deltaY) { goal.dist = clamp(goal.dist * Math.exp(deltaY * 0.001), 1.6, 14); },
     update(dt) {
-      const k = 1 - Math.exp(-dt * 3.2);
-      for (const key in cam) cam[key] += (goal[key] - cam[key]) * k;
+      if (glide) {
+        glide.t += dt;
+        const e = easeInOutCubic(Math.min(1, glide.t / glide.dur));
+        for (const key in cam) cam[key] = glide.from[key] + (goal[key] - glide.from[key]) * e;
+        if (glide.t >= glide.dur) glide = null;
+      } else {
+        const k = 1 - Math.exp(-dt * 3.2);
+        for (const key in cam) cam[key] += (goal[key] - cam[key]) * k;
+      }
       camera.position.set(cam.tx + cam.dist * Math.cos(cam.el) * Math.sin(cam.az), cam.ty + cam.dist * Math.sin(cam.el), cam.tz + cam.dist * Math.cos(cam.el) * Math.cos(cam.az));
       camera.lookAt(cam.tx, cam.ty, cam.tz);
     },

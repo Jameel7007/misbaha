@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f1217">
 <title>Misbaḥa</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Cdefs%3E%3CradialGradient id=%22g%22 cx=%22.4%22 cy=%22.35%22 r=%22.7%22%3E%3Cstop offset=%220%22 stop-color=%22%23f6bb55%22/%3E%3Cstop offset=%221%22 stop-color=%22%23a4500c%22/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%2213%22 fill=%22url(%23g)%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
@@ -21,7 +19,7 @@
     <p class="translit" id="tr">Subḥāna-llāh</p>
     <p class="gloss" id="gs">Glory be to God</p>
   </div>
-  <div class="count" aria-live="polite"><span class="num" id="num">0</span><span class="of" id="of">/ 33</span><span class="arnum" id="arnum" lang="ar">٠</span></div>
+  <div class="count" aria-live="polite"><span class="sr-only" id="countText">0 of 33</span><span class="num" id="num" aria-hidden="true"></span><span class="of" id="of" aria-hidden="true">/ 33</span><span class="arnum" id="arnum" lang="ar" aria-hidden="true"></span></div>
   <div class="bars" aria-hidden="true"><i><b id="b0"></b></i><i><b id="b1"></b></i><i><b id="b2"></b></i></div>
   <div class="meta"><span id="total">0 of 99</span><span id="round">Round 1</span></div>
 </header>
@@ -50,6 +48,19 @@
 </aside>
 
 <p class="hint" id="hint">Tap anywhere or press Space to pass one bead over the peg. Drag to turn the view.</p>
+
+<div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle" aria-describedby="introLine">
+  <div class="intro-inner">
+    <h1 class="intro-title" id="introTitle">Misbaḥa</h1>
+    <p class="intro-line" id="introLine">Ninety-nine beads, passed one by one in remembrance.</p>
+    <div class="intro-load" aria-hidden="true"><i id="introBar"></i></div>
+    <p class="sr-only" id="introStatus" aria-live="polite">Loading</p>
+    <div class="intro-begin">
+      <button class="btn primary" type="button" id="beginSound">Begin with sound</button>
+      <button class="btn" type="button" id="beginSilent">Begin in silence</button>
+    </div>
+  </div>
+</div>
 
 <div class="fallback" id="fallback" hidden>
   <div>
