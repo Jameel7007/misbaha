@@ -47,7 +47,7 @@ export const RUG = {
   greyWool:    { L: 0.52, C: 0.0,   h: 0,   role: 'line',   note: 'natural grey wool: the strapwork bands (undyed camel drifts into the beads\' own brown under a warm lamp)' },
   walnut:      { L: 0.24, C: 0.025, h: 55,  role: 'line',   note: 'walnut hull: dark brown outlines' },
   skyIndigo:   { L: 0.58, C: 0.045, h: 245, role: 'area',   note: 'a pale indigo bath: the lighter border ground, opposite amber on the wheel' },
-  pomegranate: { L: 0.48, C: 0.06,  h: 98,  role: 'accent', note: 'pomegranate rind on alum: khaki-yellow outer guard' },
+  pomegranate: { L: 0.48, C: 0.055, h: 108, role: 'accent', note: 'pomegranate rind on alum: greenish khaki, the outer guard' },
   madderPale:  { L: 0.46, C: 0.055, h: 22,  role: 'accent', note: 'a lighter madder bath: border lozenges and inner guard' },
 };
 // the white-balance reference: not used in the patterns, it's the "grey card" the lamp is
@@ -56,7 +56,7 @@ export const WHITE_REF = { L: 0.62, C: 0.025, h: 90, note: 'undyed ivory wool' }
 export const FLOOR = { floor: { L: 0.44, C: 0.02, h: 240, role: 'area', note: 'cool slate beyond the rug, so a dark bead dropped off it still shows' } };
 export const WALL = {
   cobalt:    { L: 0.355, C: 0.092, h: 266, role: 'area',   note: 'cobalt glaze: the stars' },
-  turquoise: { L: 0.48, C: 0.06,  h: 208, role: 'area',   note: 'copper turquoise glaze, a deep one: the crosses' },
+  turquoise: { L: 0.44, C: 0.06,  h: 208, role: 'area',   note: 'copper turquoise glaze, a deep one: the crosses' },
   tinWhite:  { L: 0.78, C: 0.015, h: 90,  role: 'accent', note: 'tin-opacified white: small rosettes' },
   grout:     { L: 0.20, C: 0.01,  h: 60,  role: 'line',   note: 'joints between tiles' },
 };

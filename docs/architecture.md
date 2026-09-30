@@ -222,6 +222,56 @@ solves this with the camera's white balance instead, so that's what the scene do
   of the frame. The rule was tested against the glossy glaze and tightened to the 99.9th
   percentile, which does.
 
+## Stage 2: amber that looks like amber
+
+The spec's first lesson: real see-through amber (`transmission`) refracts the dark room
+behind it and turns muddy. So amber is a **solid, polished resin with a faked inner
+glow**, added in a small shader edit (`amberGlow()` in `strand.js`) on top of three's
+`MeshPhysicalMaterial` (clearcoat 1, clearcoat roughness 0.1, roughness 0.2).
+
+What the shader adds, and why:
+- **Core glow.** Light is added where the surface faces the viewer, using the spec's
+  formula `colour × (0.06 + 0.6 · (N·V)^2.2)`. The centre glows and the rim falls away.
+- **Translucency.** The surface itself takes only 45% of the light an opaque bead would,
+  but the glow keeps the full colour, so the brightness sits inside the bead.
+- **Hue with depth.** The core is pushed toward gold (more green, less blue, which stays
+  saturated under tone mapping), and the rim deepens toward red. That matches light that
+  has travelled a short or a long way through the resin.
+- **Exit glow.** Light from the lamp above focuses through a clear bead and leaves near
+  its lower side. The bright crescent low in each bead is the cue that makes glass and
+  amber read as translucent.
+- **Inclusions.** Small dark flecks of plant debris show only against the glow, strongest
+  at the centre, never on the skin, because they are inside.
+- **Butterscotch.** 12% of beads, picked by a seeded random choice, are opaque milky
+  amber. An `aCloud` value per bead turns them opaque: full surface colour, cloudy
+  swirls, little glow, a softer finish.
+- **The lamp.** The glow follows the lamp's cone (`vLampGate`), so a bead in the dark
+  doesn't glow. Olive and ebony stay solid wood; the glow is switched off for them.
+
+**Checked against photographs.** Three Wikimedia Commons photos served as references
+(CC BY-SA 4.0):
+- "020240302 Amber muslim prayer beads" by Silar;
+- "Hilya-i Sherif and Prayer Bead Museum Beads made of Amber proper in 2018 0335" by
+  Dosseman;
+- "Baltic amber beads" by Raulfj.
+
+The amber pixels were measured in OKLCH and compared with the render. The first version
+was about 15° too orange (median hue 66° against 81–84°), with cores less golden (82°
+against 93–99°). The core shift brought the render to about 72° median and 85° in the
+cores. The rest of the gap is deliberate: the spec's cognac-to-honey range includes
+orange cognac beads, and these references are honey and lemon amber.
+
+**Knock-on checks.** More golden amber widened the beads' hue band, so the palette rules
+flagged pomegranate (now too close in hue) and turquoise (too close to olive's lightness
+in Count). Both were adjusted, and every check passes again.
+
+Mistakes on the way, kept here because they teach something:
+- The first capture of the bead colour came before three applies the per-bead colour
+  (`color_fragment`), so the glow was white. The order of shader chunks matters.
+- Painting inclusions on the surface made the beads look like speckled eggs.
+- Lightening the core washed the colour out, because tone mapping desaturates bright
+  colours. Shifting the hue instead kept it saturated.
+
 ## Interview questions this answers
 
 - *Why position-based dynamics over a force-based spring model?* It stays stable under
@@ -239,6 +289,15 @@ solves this with the camera's white balance instead, so that's what the scene do
   and fixes the cause (the light's colour) with one parameter, as a photographer does.
 - *How do you know a check works?* Break the thing on purpose and confirm the check fails.
   Here the hotspot rule passed a hotspot until it was tested that way.
+- *Why fake subsurface scattering instead of real transmission?* Transmission shows the
+  scene behind the object; in a dark room that's black, so amber goes muddy. A view-based
+  glow reads as translucent resin and costs almost nothing.
+- *How do you extend a built-in three.js material?* `onBeforeCompile` splices code into
+  named shader chunks. Chunk order matters: per-instance colour is applied in
+  `color_fragment`, after the texture in `map_fragment`.
+- *How do you judge "looks like the real thing"?* Measure the colour of reference
+  photographs and compare distributions (median and spread of hue, chroma and
+  lightness), then check by eye.
 - *How are Islamic star patterns constructed?* One classical way is Hankin's method:
   rays from each edge midpoint of a polygon tiling at a contact angle, stopped where
   they meet. Changing the angle changes the whole character of the pattern.

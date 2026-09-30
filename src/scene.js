@@ -41,7 +41,7 @@ export function createStage(canvas) {
     const s = new Scene();
     s.add(new Mesh(new BoxGeometry(30, 30, 30), new MeshBasicMaterial({ color: new Color(0.004, 0.0035, 0.003), side: BackSide })));
     const panel = (w, h, col, p) => { const m = new Mesh(new PlaneGeometry(w, h), new MeshBasicMaterial({ color: col, side: DoubleSide })); m.position.set(p[0], p[1], p[2]); m.lookAt(0, 0, 0); s.add(m); };
-    panel(5, 5, new Color(LAMP_COLOUR).multiplyScalar(7), [1.3, 10, 3.2]);     // the lamp
+    panel(8, 8, new Color(LAMP_COLOUR).multiplyScalar(5), [1.3, 10, 3.2]);     // the lamp: a broad shade, so reflections read clearly
     panel(9, 6, new Color(LAMP_COLOUR).multiplyScalar(0.22), [0, 1.5, -9]);    // warm wall glow behind
     panel(12, 2, new Color(0.06, 0.02, 0.015), [0, -6, 0]);    // faint bounce off the rug
     const pm = new PMREMGenerator(renderer);
@@ -80,8 +80,11 @@ export function createStage(canvas) {
     uCosInner: { value: Math.cos(L.angle * (1 - L.penumbra)) },
     uGateFloor: { value: 0.1 },
   };
+  // chains after any shader edit the material already has (the amber glow uses the gate)
   function gateToLamp(material) {
-    material.onBeforeCompile = shader => {
+    const before = material.onBeforeCompile.bind(material), key = material.customProgramCacheKey.bind(material);
+    material.onBeforeCompile = (shader, renderer) => {
+      before(shader, renderer);
       Object.assign(shader.uniforms, gate);
       shader.vertexShader = shader.vertexShader
         .replace('#include <common>', '#include <common>\nuniform vec3 uLampPos, uLampDir;\nuniform float uCosOuter, uCosInner, uGateFloor;\nvarying float vLampGate;')
@@ -105,7 +108,7 @@ export function createStage(canvas) {
             #endif
           #endif`);
     };
-    material.customProgramCacheKey = () => 'lamp-gated';
+    material.customProgramCacheKey = () => key() + '|lamp-gated';
     material.needsUpdate = true;
   }
 

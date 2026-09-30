@@ -55,6 +55,17 @@ export function makeTextures(renderer) {
     }
   });
 
+  // clear amber's inclusions: sparse dark flecks of plant debris, wrapped so the seam is invisible
+  const inclusions = canvasTex(512, 256, (g, w, h) => {
+    const R = rng(RNG_SEED, 5000);
+    g.fillStyle = '#fff'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 220; i++) {
+      const x = R() * w, y = R() * h, r = 0.7 + R() ** 3 * 3.2, a = 0.3 + R() * 0.5, rot = R() * Math.PI, stretch = 1 + R() * 2;
+      g.fillStyle = `rgba(70,32,8,${a.toFixed(2)})`;
+      for (const dx of [-w, 0, w]) { g.beginPath(); g.ellipse(x + dx, y, r * stretch, r, rot, 0, Math.PI * 2); g.fill(); }
+    }
+  });
+
   const fringe = canvasTex(128, 8, (g, w, h) => {
     const R = rng(RNG_SEED, RNG_SKIP.fringe);
     for (let x = 0; x < w; x++) { const L = (0.62 + R() * 0.38) * 255 | 0; g.fillStyle = `rgb(${L},${L},${L})`; g.fillRect(x, 0, 1, h); }
@@ -73,7 +84,7 @@ export function makeTextures(renderer) {
   const tiles = canvasTex(1024, 1024, drawTiles, maxAniso);
   tiles.wrapS = tiles.wrapT = RepeatWrapping;
 
-  return { grain, cloud, fringe, field, border, corner, tiles };
+  return { grain, cloud, inclusions, fringe, field, border, corner, tiles };
 }
 
 // ── the field ──

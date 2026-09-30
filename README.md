@@ -38,5 +38,6 @@ How it all fits together: [docs/architecture.md](docs/architecture.md).
 ## Progress
 
 - [x] Stage 0: Vite project, ES modules, single-file build
-- [x] Stage 1: Art direction and lighting (waiting for your check in a real browser)
-- [ ] Stage 2–9: see the spec
+- [x] Stage 1: Art direction and lighting
+- [x] Stage 2: Amber that looks like amber (waiting for your check in a real browser)
+- [ ] Stage 3–9: see the spec
