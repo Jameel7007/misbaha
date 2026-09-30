@@ -70,6 +70,10 @@ export const sim = {
 
 // ── physics: fixed 60 Hz step, 12 substeps ──
 const G = 55, SUB = 12, FRIC = 0.3, DAMP = 0.9993;
+// rest damping: below REST units/s a velocity component loses extra speed each substep,
+// so the strand comes to a true stop instead of creeping for tens of seconds (a creeping
+// strand makes the bead highlights hop between pixels, which reads as shimmer)
+const REST = 0.004, REST_DAMP = 0.995;
 
 export function step(dt) {
   const h = dt / SUB;
@@ -132,7 +136,10 @@ export function step(dt) {
       X[k] = clamp(X[k], -12, 12); X[k + 2] = clamp(X[k + 2], -12, 12);
     }
     const inv = 1 / h;
-    for (let i = 0; i < 3 * N; i++) V[i] = (X[i] - P0[i]) * inv * DAMP;
+    for (let i = 0; i < 3 * N; i++) {
+      const v = (X[i] - P0[i]) * inv * DAMP;
+      V[i] = v > -REST && v < REST ? v * REST_DAMP : v;
+    }
   }
   sim.pinFrom = pinTo.slice();
   sim.grabFrom = grabTo.slice();

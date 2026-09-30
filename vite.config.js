@@ -6,5 +6,6 @@ import { viteSingleFile } from 'vite-plugin-singlefile';
 export default defineConfig(({ mode }) => ({
   base: './',
   plugins: mode === 'single' ? [viteSingleFile()] : [],
-  build: mode === 'single' ? { outDir: 'dist-single' } : {},
+  // three.js alone is ~510 kB minified (135 kB gzipped); the default 500 kB warning is just it
+  build: { chunkSizeWarningLimit: 600, ...(mode === 'single' ? { outDir: 'dist-single' } : {}) },
 }));

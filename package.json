@@ -8,12 +8,16 @@
     "build": "vite build",
     "build:single": "vite build --mode single",
     "preview": "vite preview",
-    "preview:single": "vite preview --mode single"
+    "preview:single": "vite preview --mode single",
+    "check:palette": "node scripts/check-palette.mjs",
+    "verify:colour": "node scripts/verify-colour.mjs",
+    "calibrate:colour": "node scripts/calibrate-colour.mjs"
   },
   "dependencies": {
     "three": "^0.169.0"
   },
   "devDependencies": {
+    "playwright-core": "^1.63.0",
     "vite": "^6.4.3",
     "vite-plugin-singlefile": "^2.3.3"
   }

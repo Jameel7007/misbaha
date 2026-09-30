@@ -1,11 +1,12 @@
 // Boot, the counting / mode controller, and the frame loop.
 import { chime, clack, setSoundEnabled, setVoice, unlockAudio } from './audio.js';
+import { createDust } from './dust.js';
 import { attachInput } from './input.js';
 import {
   KIND, NL, PEG, PEG_BACK, PEG_FRONT, PEG_R, RAD, X, beadNo, clamp, dropPin, holdPin,
   layoutHang, passPin, pinTop, releaseGrab, settle, sim, step,
 } from './physics.js';
-import { addRug, createRig, createStage } from './scene.js';
+import { addRoom, createRig, createStage } from './scene.js';
 import { VARIETIES, createStrand } from './strand.js';
 import { makeTextures } from './textures.js';
 import * as ui from './ui.js';
@@ -21,11 +22,16 @@ let stage;
 try { stage = createStage(ui.canvas); } catch (e) { ui.showFallback(); }
 if (stage) boot(stage);
 
-function boot({ renderer, scene, camera }) {
+function boot(stage) {
+  const { renderer, scene, camera } = stage;
   const tex = makeTextures(renderer);
-  addRug(scene, tex);
+  const room = addRoom(scene, tex, stage.dimEnv);
+  // dev-only handle for tuning light levels live; stripped from production builds
+  if (import.meta.env.DEV) window.__stage = { ...stage, ...room };
   const strand = createStrand(scene, tex);
+  strand.materials.forEach(stage.gateToLamp);
   const rig = createRig(camera);
+  const dust = createDust(scene, stage.lamp, renderer);
 
   // ── counting state ──
   // adv: the bead currently travelling onto the peg; queued: taps made while it travels
@@ -161,6 +167,7 @@ function boot({ renderer, scene, camera }) {
     while (acc >= 1 / 60 && n < 4) { animate(1 / 60); step(1 / 60); acc -= 1 / 60; n++; }
     if (n === 4) acc = 0;
     rig.update(dt);
+    dust.update(dt);
     strand.update();
     renderer.render(scene, camera);
     requestAnimationFrame(frame);

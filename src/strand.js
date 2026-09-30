@@ -10,7 +10,7 @@ import { CA, CB, KIND, N, NL, PEG, PEG_BACK, PEG_R, SIZE, SPIN, TONE, X, sim } f
 export const VARIETIES = {
   amber: { name: 'Amber', a: '#a8480a', b: '#e69a2c', css: 'radial-gradient(circle at 40% 35%, #f3b451, #b35a10 70%)', rough: 0.14, clear: 1, map: 'cloud', emissive: '#2a0e00', silk: '#1d4a3a', clack: 2700 },
   olive: { name: 'Olive', a: '#80552f', b: '#c79a62', css: 'radial-gradient(circle at 40% 35%, #d2a877, #7a512c 75%)', rough: 0.46, clear: 0.35, map: 'grain', emissive: '#000000', silk: '#6e1d25', clack: 1500 },
-  ebony: { name: 'Ebony', a: '#150f0c', b: '#33241b', css: 'radial-gradient(circle at 40% 35%, #4a372b, #120c09 75%)', rough: 0.26, clear: 0.9, map: 'grain', emissive: '#000000', silk: '#b58f42', clack: 2000 },
+  ebony: { name: 'Ebony', a: '#1a130f', b: '#443022', css: 'radial-gradient(circle at 40% 35%, #4a372b, #120c09 75%)', rough: 0.26, clear: 0.9, map: 'grain', emissive: '#000000', silk: '#b58f42', clack: 2000 },
 };
 
 export function createStrand(scene, tex) {
@@ -117,5 +117,5 @@ export function createStrand(scene, tex) {
     threadMat.color.set(v.silk); tasselMat.color.set(v.silk);
   }
 
-  return { update, setVariety };
+  return { update, setVariety, materials: [beadMat, imamMat, sepMat, threadMat, tasselMat, pegMat] };
 }
