@@ -113,6 +113,11 @@ export function createStage(canvas) {
     material.needsUpdate = true;
   }
 
+  // a small warm light at the top of the peg: it glows as each bead passes (main.js)
+  const pegGlow = new PointLight('#ffc07a', 0, 1.6, 2);
+  pegGlow.position.set(PEG.x, PEG.y + 0.2, 0.28);
+  scene.add(pegGlow);
+
   // 0 = the room in darkness, 1 = the lamp fully up: the lamp, the wall glow, reflections
   // (scene-wide and per-material) and anything gated to the lamp (the amber's inner glow)
   function setLightLevel(k) {
@@ -123,7 +128,7 @@ export function createStage(canvas) {
     scene.traverse(o => { const m = o.material; if (m && m.userData.baseEnv !== undefined) m.envMapIntensity = m.userData.baseEnv * k; });
   }
 
-  return { renderer, scene, camera, lamp, glow, dimEnv, gateToLamp, setLightLevel };
+  return { renderer, scene, camera, lamp, glow, pegGlow, dimEnv, gateToLamp, setLightLevel };
 }
 
 // The room's surfaces: a slate floor, a prayer rug laid with its top toward the wall (as

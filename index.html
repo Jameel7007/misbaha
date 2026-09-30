@@ -19,9 +19,17 @@
     <p class="translit" id="tr">Subḥāna-llāh</p>
     <p class="gloss" id="gs">Glory be to God</p>
   </div>
-  <div class="count" aria-live="polite"><span class="sr-only" id="countText">0 of 33</span><span class="num" id="num" aria-hidden="true"></span><span class="of" id="of" aria-hidden="true">/ 33</span><span class="arnum" id="arnum" lang="ar" aria-hidden="true"></span></div>
-  <div class="bars" aria-hidden="true"><i><b id="b0"></b></i><i><b id="b1"></b></i><i><b id="b2"></b></i></div>
-  <div class="meta"><span id="total">0 of 99</span><span id="round">Round 1</span></div>
+  <!-- the tally: a ring of ticks that mirrors the strand, with the count inside it -->
+  <div class="tally">
+    <div class="ring-wrap">
+      <svg class="ring" id="ring" viewBox="-64 -64 128 128" aria-hidden="true"></svg>
+      <div class="count" aria-live="polite"><span class="sr-only" id="countText">0 of 33</span><span class="num" id="num" aria-hidden="true"></span></div>
+    </div>
+    <div class="tally-side">
+      <div class="tally-of"><span class="of" id="of" aria-hidden="true">/ 33</span><span class="arnum" id="arnum" lang="ar" aria-hidden="true"></span></div>
+      <div class="meta"><span id="total">0 of 99</span><span id="round">Round 1</span></div>
+    </div>
+  </div>
 </header>
 
 <aside class="rail" aria-label="Controls">
@@ -59,6 +67,20 @@
     <button class="intro-begin" type="button" id="begin">
       <span class="on-keys">Press <kbd>Space</kbd> to begin</span>
       <span class="on-touch">Tap anywhere to begin</span>
+    </button>
+  </div>
+</div>
+
+<!-- the hundredth: the full tahlīl, then the next round -->
+<div class="moment" id="moment" role="dialog" aria-modal="true" aria-labelledby="momentTitle" hidden>
+  <div class="moment-inner">
+    <h2 class="moment-eyebrow" id="momentTitle">The hundredth</h2>
+    <p class="moment-ar" lang="ar" dir="rtl" id="momentAr"></p>
+    <p class="moment-tr" id="momentTr"></p>
+    <p class="moment-gs" id="momentGs"></p>
+    <button class="intro-begin moment-next" type="button" id="nextRound">
+      <span class="on-keys">Press <kbd>Space</kbd> to begin the next round</span>
+      <span class="on-touch">Tap to begin the next round</span>
     </button>
   </div>
 </div>

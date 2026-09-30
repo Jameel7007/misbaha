@@ -42,7 +42,7 @@ export const RULES = {
 export const RUG = {
   madder:      { L: 0.42, C: 0.058, h: 16,  role: 'area',   note: 'madder root on alum, toward crimson: the rosette petals, most of the field' },
   indigo:      { L: 0.33, C: 0.075, h: 262, role: 'area',   note: 'indigo vat: the eight-point stars' },
-  weld:        { L: 0.56, C: 0.072, h: 102, role: 'accent', note: 'weld on alum: a cool, greenish yellow, well clear of amber' },
+  weld:        { L: 0.56, C: 0.072, h: 106, role: 'accent', note: 'weld on alum: a cool, greenish yellow, well clear of amber' },
   green:       { L: 0.44, C: 0.075, h: 158, role: 'accent', note: 'indigo overdyed with weld: green for Paradise, at the heart of each star' },
   greyWool:    { L: 0.52, C: 0.0,   h: 0,   role: 'line',   note: 'natural grey wool: the strapwork bands (undyed camel drifts into the beads\' own brown under a warm lamp)' },
   walnut:      { L: 0.24, C: 0.025, h: 55,  role: 'line',   note: 'walnut hull: dark brown outlines' },

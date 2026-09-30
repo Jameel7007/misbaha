@@ -61,9 +61,8 @@ In Count mode the current bead is pinned on top of the peg. On a tap, `startAdva
 releases it, pins the *next* bead, and animates that bead's pin target along an arc up
 onto the peg. The rest of the loop follows through the thread constraints, so the whole
 strand slides by one bead. Separators pass on their own (`arrive()` immediately starts
-another advance). Taps made while a bead is moving are queued (up to 6), so a quick
-run of taps is counted exactly. Tapping faster than about one tap per 0.1 s overflows
-the queue and the extra taps are dropped, which Stage 4 revisits.
+another advance). Taps made while a bead is moving are queued, never dropped, so every
+tap is exactly one bead (see Stage 4).
 
 ## Rendering
 
@@ -339,6 +338,44 @@ lit scene.
 
 The spec's target is under 8 s. The whole page is 336 kB compressed. Layout shift is 0.
 
+## Stage 4: counting feedback
+
+**Fast counting, the acceptance test.** It was measured first, through real key presses:
+99 taps 50 ms apart counted only 50, because a queue of 6 dropped the rest. Now taps
+queue without limit, and the more are waiting, the faster each bead passes
+(`0.1 − 0.008 × queued` seconds, never under 0.05 s, the fastest the thread constraints
+follow cleanly). Measured after the change:
+- 99 taps at 50 ms and at 30 ms (33 taps a second): 99 counts, in order.
+- 100 taps at 40 ms: exactly the hundredth, and no further.
+- Tangling: only the pinned bead's two neighbours ever sit above the peg, the same as at
+  rest.
+
+**The tick ring** (`showRing()` in `ui.js`) replaces the three bars. There is one mark per
+body on the strand, in strand order, clockwise from the top: a long mark for the imām,
+dots for the two separators, ticks for beads. Counted beads light amber, and the current
+bead is brighter and thicker. The count sits inside the ring. Bead numbers map to strand
+positions because the separators come after beads 33 and 66.
+
+**The peg's glow.** A small warm point light sits at the top of the peg.
+- Each pass adds a pulse: strength 1 normally, 2.6 at beads 33 and 66 (with a gentle
+  two-note bell, `bell()` in `audio.js`), and 3 at the hundredth.
+- Pulses raise a target that decays (0.3 s), and the light follows the target smoothly
+  (0.06 s). So fast tapping gives a steady glow, not a strobe, which keeps to the spec's
+  rule against flicker.
+- The strength was set by measuring the peg area's brightness at several intensities:
+  about +20% for a pass and +40% at 33 and 66.
+
+**The hundredth.** When the imām returns after bead 99:
+- the fuller chime plays, any taps still waiting are cleared, and counting pauses;
+- a full-screen moment shows the full tahlīl, the formula for completing the hundred
+  reported in Ṣaḥīḥ Muslim, set one phrase per line (*lā ilāha illa-llāhu waḥdahu lā
+  sharīka lah* / *lahu-l-mulku wa lahu-l-ḥamdu* / *wa huwa ʿalā kulli shayʾin qadīr*),
+  with transliteration and meaning;
+- the header and controls step back while it shows;
+- the prompt ("Press Space / Tap to begin the next round") and the gesture that dismisses
+  it wait until the words have appeared, so fast tapping can't skip past the moment;
+- dismissing starts the next round at 0 without passing a bead.
+
 ## Interview questions this answers
 
 - *Why position-based dynamics over a force-based spring model?* It stays stable under
@@ -373,6 +410,11 @@ The spec's target is under 8 s. The whole page is 336 kB compressed. Layout shif
 - *How do you measure "loads in under 8 seconds"?* Throttle the network and CPU with the
   Chrome DevTools Protocol on a production build with an empty cache, and time
   navigation → ready → first bead.
+- *How do you make "never drop an input" safe?* Queue every input, then let the system's
+  pace adapt to the backlog within limits that are measured to be stable, and test the
+  worst case (here 33 taps a second) through the real input path.
+- *How do you give feedback on rapid events without flicker?* Drive a smoothed level from
+  decaying impulses instead of flashing on each event.
 - *How are Islamic star patterns constructed?* One classical way is Hankin's method:
   rays from each edge midpoint of a polygon tiling at a contact angle, stopped where
   they meet. Changing the angle changes the whole character of the pattern.

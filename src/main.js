@@ -1,5 +1,5 @@
 // Boot, the counting / mode controller, and the frame loop.
-import { chime, clack, setSoundEnabled, setVoice, unlockAudio } from './audio.js';
+import { bell, chime, clack, setSoundEnabled, setVoice, unlockAudio } from './audio.js';
 import { createDust } from './dust.js';
 import { attachInput } from './input.js';
 import {
@@ -48,27 +48,46 @@ async function boot(stage) {
   // adv: the bead currently travelling onto the peg; queued: taps made while it travels
   // rehang: the lift back onto the peg after Hold mode
   // started: the title screen has been dismissed (no counting before Begin)
-  let mode = 'count', completed = false, round = 1, adv = null, queued = 0, rehang = null, started = false;
+  // resting: the hundredth moment is showing (no counting until the next round begins)
+  let mode = 'count', completed = false, round = 1, adv = null, queued = 0, rehang = null, started = false, resting = false;
+
+  // the peg's glow: each pass raises a target that decays; the light follows it smoothly,
+  // so fast tapping gives a steady glow rather than a strobe
+  const PEG_GLOW = 2.2;   // candela per pulse unit: a pass brightens the peg area ~20%, 33 and 66 ~40%
+  let glowTarget = 0, glowLevel = 0;
+  const pulse = strength => { glowTarget = Math.max(glowTarget, strength); };
   const showCount = () => ui.showCount(beadNo(sim.pin), completed, round);
 
   function startAdvance(auto) {
-    if (!started || mode !== 'count' || rehang) return;
-    if (adv) { if (!auto) queued = Math.min(queued + 1, 6); return; }
+    if (!started || resting || mode !== 'count' || rehang) return;
+    // a tap made while a bead is still moving is queued, never dropped: every tap is one bead
+    if (adv) { if (!auto) queued++; return; }
     passPin((sim.pin + 1) % NL);
     const k = 3 * sim.pin;
     const dx = X[k] - PEG.x, dy = X[k + 1] - PEG.y, a0 = Math.atan2(dy, dx);
     let da = Math.PI / 2 - a0;
     while (da > Math.PI) da -= 2 * Math.PI;
     while (da < -Math.PI) da += 2 * Math.PI;
-    adv = { t: 0, dur: (queued > 0 || auto) ? 0.1 : 0.17, a0, a1: a0 + da, r0: Math.hypot(dx, dy), r1: PEG_R + RAD[sim.pin] + 0.001, z0: X[k + 2] };
+    // an unhurried pass takes 0.17 s; with taps waiting, each pass quickens (down to 0.05 s,
+    // the fastest the thread constraints follow cleanly) so the strand catches up
+    const dur = queued > 0 || auto ? clamp(0.1 - 0.008 * queued, 0.05, 0.1) : 0.17;
+    adv = { t: 0, dur, a0, a1: a0 + da, r0: Math.hypot(dx, dy), r1: PEG_R + RAD[sim.pin] + 0.001, z0: X[k + 2] };
     if (!auto) { clack(1); try { navigator.vibrate && navigator.vibrate(6); } catch (e) {} }
   }
   function arrive() {
     const { pin } = sim;
     if (KIND[pin] === 1) { clack(0.6); startAdvance(true); return; }   // separators pass on their own
-    if (pin === 0) { completed = true; chime(); }
-    else if (completed) { completed = false; round++; }
     clack(0.45, 0.05);
+    if (pin === 0) {
+      // the hundredth: clear any taps still waiting, rest on the tahlīl, then a new round
+      completed = true; resting = true; queued = 0;
+      chime(); pulse(3);
+      showCount();
+      ui.moment.show(() => { completed = false; resting = false; round++; showCount(); });
+      return;
+    }
+    const n = beadNo(pin);
+    if (n === 33 || n === 66) { bell(); pulse(2.6); } else pulse(1);
     showCount();
     if (queued > 0) { queued--; startAdvance(false); }
   }
@@ -208,6 +227,9 @@ async function boot(stage) {
       stage.setLightLevel(e); dust.setLevel(e);
       if (e >= 1) lampUp = null;
     }
+    glowTarget *= Math.exp(-dt / 0.3);
+    glowLevel += (glowTarget - glowLevel) * (1 - Math.exp(-dt / 0.06));
+    stage.pegGlow.intensity = glowLevel * PEG_GLOW;
     rig.update(dt);
     dust.update(dt);
     strand.update();

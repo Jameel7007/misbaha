@@ -69,6 +69,39 @@ export async function revealPhrase() {
   $('phrase').classList.add('in');
 }
 
+// ── the tick ring: one mark per body on the strand, in strand order, clockwise from the
+// top. The imām is a long mark at the top, the two separators are dots, beads are ticks.
+const RING = { n: 102, sep: [34, 68] };
+const ringMarks = (() => {
+  const svg = $('ring'), ns = 'http://www.w3.org/2000/svg', marks = [];
+  for (let i = 0; i < RING.n; i++) {
+    const a = -Math.PI / 2 + i * 2 * Math.PI / RING.n, c = Math.cos(a), s = Math.sin(a);
+    let el;
+    if (RING.sep.includes(i)) {
+      el = document.createElementNS(ns, 'circle');
+      el.setAttribute('cx', (54 * c).toFixed(2)); el.setAttribute('cy', (54 * s).toFixed(2)); el.setAttribute('r', '2');
+      el.setAttribute('class', 'sep');
+    } else {
+      const [r0, r1] = i === 0 ? [41, 61] : [50, 58];
+      el = document.createElementNS(ns, 'line');
+      el.setAttribute('x1', (r0 * c).toFixed(2)); el.setAttribute('y1', (r0 * s).toFixed(2));
+      el.setAttribute('x2', (r1 * c).toFixed(2)); el.setAttribute('y2', (r1 * s).toFixed(2));
+      el.setAttribute('class', i === 0 ? 't imam' : 't');
+    }
+    svg.appendChild(el); marks.push(el);
+  }
+  return marks;
+})();
+// bead number (0–99) → its place on the strand (separators sit after beads 33 and 66)
+const strandIndex = c => c <= 33 ? c : c <= 66 ? c + 1 : c + 2;
+function showRing(c, completed) {
+  const at = completed ? 0 : strandIndex(c);
+  ringMarks.forEach((el, i) => {
+    el.classList.toggle('on', completed || (i > 0 && i <= at));
+    el.classList.toggle('now', i === at && (i > 0 || completed));
+  });
+}
+
 let shownPhrase = -1, counted = false;
 // c: beads counted this round (0..99); completed: the imam was reached after bead 99
 export function showCount(c, completed, round) {
@@ -92,7 +125,7 @@ export function showCount(c, completed, round) {
   counted = true;
   $('countText').textContent = completed ? '100: the tahlīl' : `${inBlock} of 33`;
   $('of').textContent = completed ? '' : '/ 33';
-  for (let k = 0; k < 3; k++) $('b' + k).style.width = (clamp01((c - 33 * k) / 33) * 100) + '%';
+  showRing(c, completed);
   $('total').textContent = completed ? '99 of 99, then the tahlīl' : `${c} of 99`;
   $('round').textContent = `Round ${round}`;
 }
@@ -138,6 +171,67 @@ export function bindControls({ onMode, onNext, onSound, onReset }) {
 
 export function showFallback() { $('fallback').hidden = false; canvas.hidden = true; $('intro').hidden = true; }
 export function markReady() { document.body.classList.add('ready'); }
+
+// ── the hundredth: the full tahlīl ──
+// The formula for completing the hundred after the prayer, as reported in Ṣaḥīḥ Muslim.
+const TAHLIL = {
+  // one natural phrase per line, so no line ever breaks inside a phrase
+  ar: ['لَا إِلَٰهَ إِلَّا ٱللَّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ،', 'لَهُ ٱلْمُلْكُ وَلَهُ ٱلْحَمْدُ،', 'وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ'],
+  tr: ['Lā ilāha illa-llāhu waḥdahu lā sharīka lah,', 'lahu-l-mulku wa lahu-l-ḥamdu, wa huwa ʿalā kulli shayʾin qadīr.'],
+  gs: 'There is no god but God alone, without partner. His is the dominion and His is the praise, and He has power over all things.',
+};
+// lines of words, revealed in order; a hyphenated word is kept whole so it never splits
+function fillLines(el, lines, start, perWord) {
+  el.textContent = '';
+  let i = start;
+  for (const line of lines) {
+    const row = document.createElement('span');
+    row.className = 'line';
+    line.split(' ').forEach((w, k) => {
+      if (k) row.append(' ');
+      const s = document.createElement('span');
+      s.className = 'w'; s.style.setProperty('--i', perWord ? i++ : i); s.textContent = w;
+      row.append(s);
+    });
+    if (!perWord) i++;
+    el.append(row);
+  }
+  return i;
+}
+export const moment = {
+  // shows the tahlīl; onNext runs when the visitor begins the next round. The prompt (and
+  // the gesture that dismisses) waits until the words have appeared.
+  show(onNext) {
+    const el = $('moment');
+    const words = fillLines($('momentAr'), TAHLIL.ar, 0, true);   // Arabic: word by word
+    const after = fillLines($('momentTr'), TAHLIL.tr, words + 1, false);   // then each line whole
+    $('momentGs').innerHTML = `<span class="w" style="--i:${after + 1}">${TAHLIL.gs}</span>`;
+    el.hidden = false;
+    document.body.classList.add('resting');
+    let ready = false, done = false;
+    const finish = () => {
+      if (!ready || done) return;
+      done = true;
+      window.removeEventListener('keydown', onKey, true);
+      el.removeEventListener('click', finish);
+      el.classList.remove('show', 'ready');
+      document.body.classList.remove('resting');
+      setTimeout(() => { el.hidden = true; }, still() ? 0 : 1000);
+      canvas.focus({ preventScroll: true });
+      onNext();
+    };
+    // caught on the way down and stopped, like the title screen, so it can't pass a bead
+    const onKey = e => { if (e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); finish(); } };
+    window.addEventListener('keydown', onKey, true);
+    el.addEventListener('click', finish);
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+    setTimeout(() => {
+      ready = true;
+      el.classList.add('ready');
+      $('nextRound').focus({ preventScroll: true });
+    }, still() ? 300 : 400 + (after + 1) * 90 + 900);
+  },
+};
 
 // ── title screen ──
 // Loads the exact faces the page uses and resolves when they're ready (or after 3 s, so a

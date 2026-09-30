@@ -1,4 +1,5 @@
-// Synthesised sounds: a short filtered click for bead on bead, a soft chime at 100.
+// Synthesised sounds: a short filtered click for bead on bead, a gentle bell at 33 and 66,
+// a fuller chime at 100.
 let ctx = null, enabled = true, voice = 2700;
 
 // create or resume the AudioContext; must first run inside a user gesture
@@ -34,5 +35,18 @@ export function chime() {
     o.type = 'sine'; o.frequency.value = f;
     g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(a, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.4);
     o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + 2.5);
+  }
+}
+
+// a gentle bell at the end of each thirty-three: two soft partials, a long decay
+export function bell() {
+  if (!enabled) return;
+  const ac = unlockAudio(); if (!ac) return;
+  const t = ac.currentTime + 0.04;
+  for (const [f, a] of [[523.25, 0.07], [1046.5, 0.025]]) {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(a, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
+    o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + 1.9);
   }
 }

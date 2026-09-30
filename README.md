@@ -41,5 +41,6 @@ How it all fits together: [docs/architecture.md](docs/architecture.md).
 - [x] Stage 0: Vite project, ES modules, single-file build
 - [x] Stage 1: Art direction and lighting
 - [x] Stage 2: Amber that looks like amber
-- [x] Stage 3: Opening and typography (waiting for your check in a real browser)
-- [ ] Stage 4–9: see the spec
+- [x] Stage 3: Opening and typography
+- [x] Stage 4: Counting feedback (waiting for your check in a real browser)
+- [ ] Stage 5–9: see the spec
