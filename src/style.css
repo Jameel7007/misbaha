@@ -46,11 +46,21 @@ body.fonts .intro-title, body.fonts .intro-line { opacity: 1; transform: none; }
 .intro-load { width: 180px; height: 1px; margin: 40px auto 0; background: var(--line); transition: opacity .6s ease; }
 .intro-load i { display: block; height: 100%; width: 0; background: var(--amber); transition: width .45s ease; }
 body.loaded .intro-load { opacity: 0; }
-.intro-begin { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 22px;
-  opacity: 0; visibility: hidden; transform: translateY(8px); transition: opacity .8s ease, transform .9s cubic-bezier(.2, .75, .2, 1), visibility 0s .8s; }
-body.loaded .intro-begin { opacity: 1; visibility: visible; transform: none; transition-delay: .15s, .15s, 0s; }
-.intro-begin { max-width: 400px; margin-inline: auto; }
-.intro-begin .btn, .intro-begin .btn.primary { flex: 1 1 160px; width: auto; min-height: 46px; padding: 0 18px; font-size: 14px; }
+.intro-begin { display: inline-flex; align-items: center; margin-top: 26px; padding: 10px 16px; border: 0; background: none; cursor: pointer;
+  font: 400 13px/1 var(--ui); letter-spacing: .06em; color: var(--muted);
+  opacity: 0; visibility: hidden; transform: translateY(8px); transition: opacity .8s ease, transform .9s cubic-bezier(.2, .75, .2, 1), color .3s ease, visibility 0s .8s; }
+body.loaded .intro-begin { opacity: 1; visibility: visible; transform: none; transition-delay: .15s, .15s, 0s, 0s; }
+.intro-begin:hover, .intro-begin:focus-visible { color: var(--ink); }
+/* it's focused for keyboard users on load; brighter text shows focus without boxing the line */
+.intro-begin:focus-visible { outline: none; }
+.intro-begin kbd { display: inline-block; margin: 0 .55em; padding: 6px 12px 5px; border: 1px solid var(--line-strong); border-radius: 4px;
+  font: 500 12px/1 var(--ui); letter-spacing: .08em; color: var(--ink); }
+.intro-begin .on-touch { display: none; }
+@media (hover: none) and (pointer: coarse) {
+  .intro-begin .on-keys { display: none; }
+  .intro-begin .on-touch { display: inline; }
+}
+body.loaded .intro { cursor: pointer; }
 
 #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; opacity: 0; transition: opacity .9s ease; }
 body.ready #gl { opacity: 1; }

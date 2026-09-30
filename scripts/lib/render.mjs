@@ -21,7 +21,7 @@ export async function open(browser, variety, mode) {
   await page.waitForFunction(() => window.__stage);
   // past the title screen: Begin, then wait for the lamp to fade up and the camera to arrive
   await page.waitForSelector('body.loaded');
-  await page.click('#beginSilent');
+  await page.keyboard.press('Space');
   await page.waitForTimeout(3600);
   if (mode === 'hold') await page.click('#modeHold');
   await page.waitForTimeout(mode === 'hold' ? 6000 : 3000);

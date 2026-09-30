@@ -275,8 +275,11 @@ Mistakes on the way, kept here because they teach something:
 ## Stage 3: the opening and typography
 
 **The title screen** (`intro` in `ui.js`, the boot sequence in `main.js`).
-"Misbaḥa" in Amiri italic, one line, a thin loading bar, then "Begin with sound" and
-"Begin in silence". The bar reports real work, not a timer. Boot runs in steps and yields
+"Misbaḥa" in Amiri italic, one line, a thin loading bar, then a single prompt. The
+prompt is the counting gesture itself, so it doubles as the first lesson: "Press Space to
+begin" on a keyboard, "Tap anywhere to begin" on a touch-only phone (detected with the CSS
+query `(hover: none) and (pointer: coarse)`). Every visit starts with sound; the Sound
+button turns it off for that visit. The bar reports real work, not a timer. Boot runs in steps and yields
 a frame between them so the bar can move:
 1. textures;
 2. the room and the strand;
@@ -285,7 +288,11 @@ a frame between them so the bar can move:
    doesn't stall;
 5. fonts.
 
-The Begin click is also the user gesture browsers require before they allow audio.
+The Begin press or tap is also the user gesture browsers require before they allow audio.
+The Space that begins must not also pass a bead, so the title screen listens on `window`
+in the capture phase (the first stop on an event's way down) and stops the event there,
+before it can reach the counting handler. Tested: after Begin the count reads 0, and the
+next Space or tap counts 1.
 
 **Begin.**
 - The title lifts away (a CSS transform).

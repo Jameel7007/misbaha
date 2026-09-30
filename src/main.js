@@ -131,7 +131,7 @@ async function boot(stage) {
     setVoice(VARIETIES[key].clack);
     ui.showVariety(key);
   }
-  let soundOn = store.get('sound') !== 'off';
+  let soundOn = true;   // every visit starts with sound; the Sound button turns it off for this visit
   setSoundEnabled(soundOn);
   ui.showSound(soundOn);
   ui.buildSwatches(VARIETIES, setVariety);
@@ -139,7 +139,7 @@ async function boot(stage) {
     onMode: setMode,
     onNext: () => startAdvance(false),
     onSound: () => {
-      soundOn = !soundOn; store.set('sound', soundOn ? 'on' : 'off');
+      soundOn = !soundOn;
       setSoundEnabled(soundOn);
       ui.showSound(soundOn);
       if (soundOn) clack(0.6);
@@ -184,11 +184,9 @@ async function boot(stage) {
 
   // ── Begin: the title lifts away, the lamp fades up, the camera glides in ──
   let lampUp = null;
-  ui.intro.onBegin(withSound => {
+  ui.intro.onBegin(() => {
     if (started) return;
-    soundOn = withSound; store.set('sound', soundOn ? 'on' : 'off');
-    setSoundEnabled(soundOn); ui.showSound(soundOn);
-    unlockAudio();   // this click is the user gesture browsers require for audio
+    unlockAudio();   // the Begin press or tap is the user gesture browsers require for audio
     started = true;
     ui.intro.begun();
     if (still()) { stage.setLightLevel(1); dust.setLevel(1); ui.revealPhrase(); return; }

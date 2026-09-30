@@ -156,12 +156,28 @@ export const intro = {
   progress(k) { $('introBar').style.width = (clamp01(k) * 100).toFixed(1) + '%'; },
   loaded() {
     document.body.classList.add('loaded');
-    $('introStatus').textContent = 'Ready. Begin with sound, or begin in silence.';
-    $('beginSound').focus({ preventScroll: true });
+    const touch = matchMedia('(hover: none) and (pointer: coarse)').matches;
+    $('introStatus').textContent = touch ? 'Ready. Tap anywhere to begin.' : 'Ready. Press Space to begin.';
+    $('begin').focus({ preventScroll: true });
   },
+  // Begin with Space or Enter, or a click or tap anywhere on the title screen. The key is
+  // caught on the way down (window, capture phase) and stopped there, so the same press
+  // can't also reach the counting handler and pass a bead.
   onBegin(cb) {
-    $('beginSound').addEventListener('click', () => cb(true));
-    $('beginSilent').addEventListener('click', () => cb(false));
+    let done = false;
+    const go = () => {
+      if (done || !document.body.classList.contains('loaded')) return;
+      done = true;
+      window.removeEventListener('keydown', onKey, true);
+      cb();
+    };
+    const onKey = e => {
+      if (e.code !== 'Space' && e.key !== 'Enter') return;
+      e.preventDefault(); e.stopPropagation();
+      go();
+    };
+    window.addEventListener('keydown', onKey, true);
+    $('intro').addEventListener('click', go);
   },
   begun() {
     document.body.classList.add('begun');

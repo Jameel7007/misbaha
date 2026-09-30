@@ -55,10 +55,11 @@
     <p class="intro-line" id="introLine">Ninety-nine beads, passed one by one in remembrance.</p>
     <div class="intro-load" aria-hidden="true"><i id="introBar"></i></div>
     <p class="sr-only" id="introStatus" aria-live="polite">Loading</p>
-    <div class="intro-begin">
-      <button class="btn primary" type="button" id="beginSound">Begin with sound</button>
-      <button class="btn" type="button" id="beginSilent">Begin in silence</button>
-    </div>
+    <!-- the begin gesture is the counting gesture: Space on a keyboard, a tap on a phone -->
+    <button class="intro-begin" type="button" id="begin">
+      <span class="on-keys">Press <kbd>Space</kbd> to begin</span>
+      <span class="on-touch">Tap anywhere to begin</span>
+    </button>
   </div>
 </div>
 
