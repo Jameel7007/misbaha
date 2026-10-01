@@ -1,10 +1,11 @@
 // Boot, the counting / mode controller, and the frame loop.
 import { bell, chime, click, setMaterial, setRoomTone, setSoundEnabled, unlockAudio } from './audio.js';
+import * as dhikr from './dhikr.js';
 import { createDust } from './dust.js';
 import { createHand } from './hand.js';
 import { attachInput } from './input.js';
 import {
-  KIND, NL, PEG, PEG_BACK, PEG_FRONT, PEG_R, RAD, SIZE, TONE, X, beadNo, clamp, dropPin, holdPin, impacts,
+  KIND, NL, PEG, PEG_BACK, PEG_FRONT, PEG_R, RAD, SIZE, TONE, X, clamp, dropPin, holdPin, impacts,
   layoutHang, passPin, pinTop, releaseGrab, settle, sim, step,
 } from './physics.js';
 import { addRoom, createRig, createStage } from './scene.js';
@@ -53,14 +54,25 @@ async function boot(stage) {
   // rehang: the lift back onto the peg after Hold mode
   // started: the title screen has been dismissed (no counting before Begin)
   // resting: the hundredth moment is showing (no counting until the next round begins)
-  let mode = 'count', completed = false, round = 1, adv = null, queued = 0, rehang = null, started = false, resting = false;
+  let mode = 'count', adv = null, queued = 0, rehang = null, started = false, resting = false;
 
   // the peg's glow: each pass raises a target that decays; the light follows it smoothly,
   // so fast tapping gives a steady glow rather than a strobe
   const PEG_GLOW = 2.2;   // candela per pulse unit: a pass brightens the peg area ~20%, 33 and 66 ~40%
   let glowTarget = 0, glowLevel = 0;
   const pulse = strength => { glowTarget = Math.max(glowTarget, strength); };
-  const showCount = () => ui.showCount(beadNo(sim.pin), completed, round);
+  // ── the dhikr set: a count per set, saved on this device ──
+  // Every bead or imām passed is one count. The strand is placed so the imām comes round on
+  // each hundredth; the ring shows where the count stands on the strand.
+  const saved = dhikr.load();
+  let setKey = saved.current, { count, round } = dhikr.progressOf(saved, setKey);
+  const currentSet = () => dhikr.preset(setKey, saved.custom);
+  const strandIndex = c => c <= 33 ? c : c <= 66 ? c + 1 : c + 2;   // bead 1–99 → strand position
+  const cycle = () => count === 0 ? 0 : ((count - 1) % 100) + 1;    // 1–100 along the strand
+  const pinFor = () => cycle() === 100 ? 0 : strandIndex(cycle());
+  const showCount = () => ui.showTally(dhikr.view(currentSet(), count), { at: pinFor(), loopDone: cycle() === 100 }, round);
+  const persist = () => { saved.current = setKey; saved.progress[setKey] = { count, round }; dhikr.save(saved); };
+  sim.pin = pinFor();
 
   // ── sound for each body: a bead's pitch follows its size (smaller is higher) with a little
   // of its own character; separators are brass; the imām, the largest, sounds lower
@@ -108,16 +120,18 @@ async function boot(stage) {
     // the bead settling onto the finger: a softer tick, skipped while taps are waiting so a
     // fast run doesn't double up
     if (queued === 0) click(0.45, { ...voice(pin), delay: 0.03 });
-    if (pin === 0) {
-      // the hundredth: clear any taps still waiting, rest on the tahlīl, then a new round
-      completed = true; resting = true; queued = 0;
+    count++;
+    persist();
+    const set = currentSet(), v = dhikr.view(set, count);
+    if (v.complete) {
+      // the set is complete: clear any taps still waiting, rest on its closing words, then a new round
+      resting = true; queued = 0;
       chime(); pulse(3);
       showCount();
-      ui.moment.show(() => { completed = false; resting = false; round++; showCount(); });
+      ui.moment.show(set.done, () => { count = 0; round++; resting = false; persist(); showCount(); });
       return;
     }
-    const n = beadNo(pin);
-    if (n === 33 || n === 66) { bell(); pulse(2.6); } else pulse(1);
+    if (v.blockEnd) { bell(); pulse(2.6); } else pulse(1);   // the end of each thirty-three
     showCount();
     if (queued > 0) { queued--; startAdvance(false); }
   }
@@ -166,13 +180,46 @@ async function boot(stage) {
     rig.preset(mode);
     input.setCursor();
   }
-  function reset() {
+  // lay the strand out afresh at the current count (Reset, or choosing another set)
+  function rehangAtCount() {
     adv = null; queued = 0; rehang = null; sim.bias = 0; releaseGrab();
-    sim.pin = 0; completed = false; round = 1;
+    sim.pin = pinFor();
     layoutHang(); settle(150);
     if (mode === 'hold') { dropPin(); sim.pegGoal = PEG_BACK; }
     showCount();
   }
+  function reset() { count = 0; round = 1; persist(); rehangAtCount(); }
+  function chooseSet(key) {
+    if (key === setKey) return;
+    persist();
+    setKey = key; ({ count, round } = dhikr.progressOf(saved, key));
+    persist();
+    ui.showSetName(setName());
+    rehangAtCount();
+  }
+  const setName = () => setKey === 'custom' ? `Your own · ${saved.custom.phrase.length > 26 ? saved.custom.phrase.slice(0, 25) + '…' : saved.custom.phrase}` : currentSet().name;
+  ui.showSetName(setName());
+  ui.bindPanel({
+    getSets: () => ({
+      current: setKey,
+      sets: dhikr.ORDER.map(key => {
+        const set = dhikr.preset(key, saved.custom), first = set.blocks[0][1], p = dhikr.progressOf(saved, key);
+        return {
+          key, name: key === 'custom' ? `Your own: ${saved.custom.phrase}` : set.name, detail: set.detail, ar: first.ar,
+          progress: p.count === 0 && p.round === 1 ? 'Not started' : `${p.count} of ${set.target}${p.round > 1 ? ` · round ${p.round}` : ''}`,
+        };
+      }),
+    }),
+    getCustom: () => saved.custom,
+    onPick: chooseSet,
+    // a new custom phrase is a new set: it starts from zero
+    onCustom: ({ phrase, meaning, target }) => {
+      saved.custom = { phrase: phrase.slice(0, 80), meaning: meaning.slice(0, 120), target: dhikr.clampTarget(target) };
+      saved.progress.custom = { count: 0, round: 1 };
+      if (setKey === 'custom') { count = 0; round = 1; persist(); ui.showSetName(setName()); rehangAtCount(); }
+      else chooseSet('custom');
+    },
+  });
 
   // ── controls ──
   function setVariety(key) {
@@ -213,8 +260,8 @@ async function boot(stage) {
   window.addEventListener('resize', resize);
 
   // ── boot ──
-  const saved = store.get('variety');
-  setVariety(VARIETIES[saved] ? saved : 'amber');
+  const savedVariety = store.get('variety');
+  setVariety(VARIETIES[savedVariety] ? savedVariety : 'amber');
   resize();
   rig.snap();
   ui.intro.progress(0.6);

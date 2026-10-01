@@ -53,7 +53,8 @@ export function attachInput({ canvas, camera, rig, getMode, onPass, onUnlock }) 
   canvas.addEventListener('wheel', e => { e.preventDefault(); rig.zoom(e.deltaY); }, { passive: false });
   document.addEventListener('keydown', e => {
     const t = e.target;
-    if (t && t.tagName === 'BUTTON') return;
+    // keys belong to whatever has focus: buttons, the custom form's fields, the set picker
+    if (t && (t.tagName === 'BUTTON' || t.tagName === 'INPUT' || t.closest?.('.panel'))) return;
     if (e.code === 'Space' || e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); onUnlock(); onPass(); }
   });
 

@@ -467,6 +467,46 @@ driven through real input and the clicks counted: 10 unhurried taps play 20 clic
 (pull and landing); 20 fast taps play 21. The final judgement is by ear, so the renders
 were kept as a listening file.
 
+## Stage 7: dhikr sets and memory
+
+**The sets** (`dhikr.js`, pure data and arithmetic):
+- the tasbīḥ after prayer, as 33·33·33 then the tahlīl, and as 33·33·34;
+- istighfār ×100 and ṣalawāt ×100;
+- a plain Counter to 100;
+- a custom set: any phrase in any script (Arabic script takes the Arabic line), an
+  optional meaning, and a target of 1–9999.
+
+Each set is a list of blocks (how many, which phrase) plus the closing words its
+completion shows: the full tahlīl, the thirty-fourth takbīr, the fuller istighfār
+(*astaghfiru-llāha wa atūbu ilayh*) or the fuller ṣalawāt. `view()` turns a count into
+what to show: the phrase, the number within its block, the totals, and whether it ends a
+block (the bell) or completes the set (the moment).
+
+**Counting became a count.** Before, the count was read off the strand's position, which
+only works for one fixed form. Now every bead or imām passed adds one to the current
+set's count. The strand is placed to match the count (Reset, choosing a set, restoring),
+so the imām comes round on each hundredth. The ring shows where the count stands on the
+strand, so for a custom target like 1000 it goes round ten times.
+
+**Memory.** `localStorage` holds the current set, each set's count and round, and the
+custom definition. It's saved on every bead, read inside try/catch, and validated field
+by field, so corrupted or old data falls back to defaults instead of crashing (tested).
+A new custom phrase starts from zero.
+
+**The panel.** The header's set name opens a dialog with the set list (each with its
+saved progress), the custom form and the About page. It's a modal: focus stays inside it
+and Escape closes it. Counting keys ignore form fields, so typing a space in the phrase
+never passes a bead (tested).
+
+**Bugs the tests caught:**
+- *Lost taps after switching sets.* Closing the panel returned focus to the set button,
+  so the next Space reopened the panel instead of passing a bead: 5 taps counted 0.
+  Focus now returns to the beads; only Escape goes back to the set button.
+- *The panel ran off-screen.* Its `max-height: 100%` had nothing definite to resolve
+  against inside a content-sized grid, so it was ignored. It's now sized in viewport
+  units (`dvh`), and the scrolling body has `min-height: 0`, which lets a flex child
+  shrink and scroll.
+
 ## Interview questions this answers
 
 - *Why position-based dynamics over a force-based spring model?* It stays stable under
@@ -523,6 +563,13 @@ were kept as a listening file.
 - *How do you test audio you can't hear?* Render it offline with `OfflineAudioContext`,
   measure it (peaks, similarity between events), count what the live code triggers, and
   keep renders for a person to listen to.
+- *Why separate content from display?* `dhikr.js` holds the sets as data and computes what
+  to show; the UI only draws it. Adding a set means adding data, not code paths.
+- *How do you make localStorage robust?* Wrap reads and writes in try/catch, validate
+  every field, and fall back to defaults; test with corrupted data.
+- *Why do percentage heights sometimes do nothing?* A percentage needs a definite
+  containing size; in a content-sized grid or flex context there isn't one. Viewport units
+  and `min-height: 0` on flex children are the usual fixes.
 - *How are Islamic star patterns constructed?* One classical way is Hankin's method:
   rays from each edge midpoint of a polygon tiling at a contact angle, stopped where
   they meet. Changing the angle changes the whole character of the pattern.

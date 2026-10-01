@@ -62,6 +62,63 @@ body.loaded .intro-begin { opacity: 1; visibility: visible; transform: none; tra
 }
 body.loaded .intro { cursor: pointer; }
 
+/* ── the set button in the header ── */
+.set-btn { pointer-events: auto; display: inline-flex; align-items: center; gap: 8px; margin: -6px -8px; padding: 6px 8px; border: 1px solid transparent; background: none; cursor: pointer; }
+.set-btn:hover, .set-btn:focus-visible { border-color: var(--line); }
+.set-btn:hover .eyebrow, .set-btn:focus-visible .eyebrow { color: var(--ink); }
+.set-btn .chev { width: 7px; height: 7px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: translateY(-2px) rotate(45deg); }
+/* a phrase that isn't Arabic (the Counter, a custom phrase) takes the big line in the serif */
+.arabic.latin { font: italic 400 clamp(36px, 4.4vw, 58px)/1.25 var(--serif); margin-top: .35em; }
+
+/* ── the set picker and About ── */
+.panel { position: fixed; inset: 0; z-index: 6; display: grid; place-items: center; padding: var(--gutter); background: rgba(8, 9, 12, .72);
+  opacity: 0; transition: opacity .35s ease; }
+.panel.show { opacity: 1; }
+.panel-sheet { width: min(620px, 100%); max-height: min(780px, calc(100dvh - 2 * var(--gutter)));   /* viewport units: a % here has nothing definite to resolve against */ display: flex; flex-direction: column; background: #12151b; border: 1px solid var(--line);
+  transform: translateY(10px); transition: transform .45s cubic-bezier(.2, .75, .2, 1); }
+.panel.show .panel-sheet { transform: none; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px 12px; border-bottom: 1px solid var(--line); }
+.panel-title { font: italic 400 26px/1.1 var(--serif); margin: 0; }
+.panel-close { width: 44px; height: 44px; margin: -8px -12px -8px 0; border: 0; background: none; color: var(--muted); font: 300 26px/1 var(--ui); cursor: pointer; }
+.panel-close:hover { color: var(--ink); }
+.panel-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 14px 22px 22px; }   /* min-height 0 lets a flex child shrink and scroll */
+.sets { display: grid; gap: 6px; }
+.set { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 14px; width: 100%; padding: 12px 14px; text-align: left;
+  border: 1px solid var(--line); background: none; cursor: pointer; }
+.set:hover { border-color: var(--line-strong); }
+.set[aria-checked="true"] { border-color: var(--amber); background: rgba(226, 165, 75, .06); }
+.set-name { font: 500 14px/1.3 var(--ui); }
+.set-detail { grid-column: 1; color: var(--muted); font-size: 12px; }
+.set-ar { grid-row: 1 / span 2; grid-column: 2; font: 400 24px/1.4 var(--arabic); color: var(--muted); }
+.set-progress { grid-column: 1; color: var(--amber); font-size: 12px; font-variant-numeric: tabular-nums; }
+.custom { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.custom-title { grid-column: 1 / -1; margin: 0; font: italic 400 20px/1.2 var(--serif); }
+.field { display: grid; gap: 6px; grid-column: 1 / -1; }
+.field.narrow { grid-column: 1; }
+.field span { font: 500 10.5px/1 var(--ui); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.field i { text-transform: none; letter-spacing: 0; }
+.field input { min-height: 44px; padding: 8px 12px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, .03); color: var(--ink); font: 400 16px/1.3 var(--ui); }
+.field input:focus { outline: 1px solid var(--ink); outline-offset: 1px; }
+.custom .btn.primary { grid-column: 2; align-self: end; min-height: 44px; }
+.about-link { margin-top: 18px; padding: 10px 0; border: 0; background: none; color: var(--muted); font: italic 400 17px/1.3 var(--serif); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line-strong); }
+.about-link:hover { color: var(--ink); }
+.about { font-size: 14px; line-height: 1.6; color: #d9d2c4; }
+.about .lede { font: italic 400 19px/1.5 var(--serif); color: var(--ink); margin: 4px 0 6px; }
+.about h3 { font: 500 10.5px/1 var(--ui); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin: 22px 0 8px; }
+.about p { margin: 0 0 10px; }
+.about ul { margin: 0; padding-left: 18px; }
+.about li { margin: 4px 0; }
+.about kbd { font: 500 11px/1 var(--ui); padding: 2px 6px; border: 1px solid var(--line-strong); border-radius: 3px; }
+.phrases { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: baseline; margin: 6px 0 12px; }
+.phrases dt { font: 400 26px/1.5 var(--arabic); text-align: right; }
+.phrases dd { margin: 0; }
+@media (max-width: 760px) {
+  .panel { padding: 0; place-items: end stretch; }
+  .panel-sheet { width: 100%; max-height: 92dvh; border-width: 1px 0 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .custom { grid-template-columns: 1fr; }
+  .field.narrow, .custom .btn.primary { grid-column: 1; }
+}
+
 /* ── the hundredth ── */
 .moment { position: fixed; inset: 0; z-index: 4; display: grid; place-items: center; background: rgba(8, 9, 12, .88);
   opacity: 0; transition: opacity 1s ease; cursor: default; }
@@ -75,6 +132,7 @@ body.loaded .intro { cursor: pointer; }
 .moment-tr .w { white-space: nowrap; }
 /* while the moment shows, the header, controls and hint step back */
 body.resting .dhikr, body.resting .rail, body.resting .hint { opacity: 0; transition-delay: 0s; }
+.moment-big { font: italic 400 clamp(44px, 6vw, 80px)/1.2 var(--serif); margin: .4em 0 0; }
 .moment-gs { font: 400 clamp(14px, 1.3vw, 16px)/1.5 var(--ui); color: var(--muted); margin: 12px auto 0; max-width: 34em; text-wrap: balance; }
 .moment .w { display: inline-block; opacity: 0; transform: translateY(.45em);
   transition: opacity .7s ease, transform .85s cubic-bezier(.2, .75, .2, 1); transition-delay: calc(var(--i) * 90ms + .4s); }
@@ -195,6 +253,6 @@ button:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
   .rail { gap: 10px; padding: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  #gl, .vignette, .phrase, .phrase .w, .ring line, .ring circle, .moment, .moment .w, .od-strip, .intro, .intro-title, .intro-line, .intro-begin,
+  #gl, .vignette, .phrase, .phrase .w, .ring line, .ring circle, .moment, .moment .w, .panel, .panel-sheet, .od-strip, .intro, .intro-title, .intro-line, .intro-begin,
   .dhikr, .rail, .hint { transition: none !important; }
 }

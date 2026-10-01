@@ -5,12 +5,6 @@ export const canvas = $('gl');
 const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
 
-const PHRASES = [
-  { ar: 'سُبْحَانَ ٱللَّٰهِ', tr: 'Subḥāna-llāh', gs: 'Glory be to God' },
-  { ar: 'ٱلْحَمْدُ لِلَّٰهِ', tr: 'Al-ḥamdu li-llāh', gs: 'All praise belongs to God' },
-  { ar: 'ٱللَّٰهُ أَكْبَرُ', tr: 'Allāhu akbar', gs: 'God is the greatest' },
-  { ar: 'لَا إِلَٰهَ إِلَّا ٱللَّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ', tr: 'Lā ilāha illa-llāhu waḥdahu lā sharīka lah', gs: 'There is no god but God alone, He has no partner. The hundred is complete.' },
-];
 const HINTS = {
   count: 'Tap anywhere or press Space to pass one bead over the peg. Drag to turn the view.',
   hold: 'Drag any bead to lift the strand. Drag empty space to turn the view, scroll to zoom.',
@@ -57,9 +51,14 @@ function fillWords(el, text, start) {
   return start + text.split(' ').length;
 }
 function setPhrase(ph) {
-  let i = fillWords($('ar'), ph.ar, 0);
-  i = fillWords($('tr'), ph.tr, i);
-  fillWords($('gs'), ph.gs, i);
+  const big = $('ar'), latin = !ph.ar;
+  big.classList.toggle('latin', latin);
+  big.setAttribute('lang', latin ? 'en' : 'ar'); big.setAttribute('dir', latin ? 'auto' : 'rtl');
+  let i = fillWords(big, ph.ar || ph.big, 0);
+  $('tr').hidden = !ph.tr; $('tr').textContent = '';
+  if (ph.tr) i = fillWords($('tr'), ph.tr, i);
+  $('gs').hidden = !ph.gs; $('gs').textContent = '';
+  if (ph.gs) fillWords($('gs'), ph.gs, i);
 }
 let revealed = false;
 // the first phrase waits for the header to appear after Begin
@@ -92,43 +91,41 @@ const ringMarks = (() => {
   }
   return marks;
 })();
-// bead number (0–99) → its place on the strand (separators sit after beads 33 and 66)
-const strandIndex = c => c <= 33 ? c : c <= 66 ? c + 1 : c + 2;
-function showRing(c, completed) {
-  const at = completed ? 0 : strandIndex(c);
+// the ring mirrors the strand: `at` is the strand position on the finger (0 is the imām);
+// loopDone lights the whole ring when the imām has just come round
+function showRing(at, loopDone) {
   ringMarks.forEach((el, i) => {
-    el.classList.toggle('on', completed || (i > 0 && i <= at));
-    el.classList.toggle('now', i === at && (i > 0 || completed));
+    el.classList.toggle('on', loopDone || (i > 0 && i <= at));
+    el.classList.toggle('now', i === at && (i > 0 || loopDone));
   });
 }
 
-let shownPhrase = -1, counted = false;
-// c: beads counted this round (0..99); completed: the imam was reached after bead 99
-export function showCount(c, completed, round) {
-  if (completed) c = 99;
-  const block = completed ? 3 : c === 0 ? 0 : Math.floor((c - 1) / 33);
-  const inBlock = completed ? 100 : c - 33 * Math.min(block, 2);
-  if (block !== shownPhrase) {
-    const ph = PHRASES[block], el = $('phrase');
-    if (shownPhrase < 0 || !revealed || still()) { setPhrase(ph); if (revealed) el.classList.add('in'); }
+let shownPhrase = '', counted = false;
+// v: what dhikr.view() says to show; ring: { at, loopDone }; round: the round of this set
+export function showTally(v, ring, round) {
+  if (v.phraseKey !== shownPhrase) {
+    const el = $('phrase');
+    if (!shownPhrase || !revealed || still()) { setPhrase(v.phrase); if (revealed) el.classList.add('in'); }
     else {
       el.classList.add('out');
       setTimeout(async () => {
-        el.classList.remove('in', 'out'); setPhrase(ph);
+        el.classList.remove('in', 'out'); setPhrase(v.phrase);
         await nextFrame(); el.offsetWidth; el.classList.add('in');
       }, 260);
     }
-    shownPhrase = block;
+    shownPhrase = v.phraseKey;
   }
-  numOdo(String(inBlock), counted);
-  arOdo(arDigits(inBlock), counted);
+  const n = String(v.number);
+  numOdo(n, counted);
+  arOdo(arDigits(n), counted);
   counted = true;
-  $('countText').textContent = completed ? '100: the tahlīl' : `${inBlock} of 33`;
-  $('of').textContent = completed ? '' : '/ 33';
-  showRing(c, completed);
-  $('total').textContent = completed ? '99 of 99, then the tahlīl' : `${c} of 99`;
+  $('countText').textContent = v.spoken;
+  $('of').textContent = v.of;
+  showRing(ring.at, ring.loopDone);
+  $('total').textContent = v.total;
   $('round').textContent = `Round ${round}`;
 }
+export function showSetName(name) { $('setName').textContent = name; }
 
 export function buildSwatches(varieties, onPick) {
   const sw = $('swatches');
@@ -172,17 +169,66 @@ export function bindControls({ onMode, onNext, onSound, onReset, onRoomTone }) {
   });
 }
 
+// ── the set picker and About ──
+// sets: [{ key, name, detail, ar, progress }]; onPick(key); onCustom({ phrase, meaning, target })
+let panelOpen = false;
+export const isPanelOpen = () => panelOpen;
+export function bindPanel({ getSets, getCustom, onPick, onCustom }) {
+  const panel = $('panel');
+  const view = about => { $('panelSets').hidden = about; $('panelAbout').hidden = !about; $('panelTitle').textContent = about ? 'About' : 'Choose a dhikr'; };
+  // where focus goes after: back to the beads, so the next Space passes a bead (if it went to
+  // the set button, Space would reopen the panel); Escape returns to the set button, as a
+  // keyboard user expects
+  const close = (toButton = false) => {
+    if (!panelOpen) return;
+    panelOpen = false; panel.classList.remove('show');
+    setTimeout(() => { panel.hidden = true; }, still() ? 0 : 350);
+    (toButton ? $('setBtn') : canvas).focus({ preventScroll: true });
+  };
+  const open = () => {
+    const { sets, current } = getSets();
+    const list = $('sets'); list.textContent = '';
+    for (const st of sets) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'set'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(st.key === current));
+      b.innerHTML = '<span class="set-name"></span><span class="set-ar" lang="ar" dir="rtl"></span><span class="set-detail"></span><span class="set-progress"></span>';
+      b.children[0].textContent = st.name; b.children[1].textContent = st.ar || ''; b.children[2].textContent = st.detail; b.children[3].textContent = st.progress;
+      b.addEventListener('click', () => { onPick(st.key); close(); });
+      list.appendChild(b);
+    }
+    const c = getCustom();
+    $('customPhrase').value = c.phrase; $('customMeaning').value = c.meaning; $('customTarget').value = c.target;
+    view(false);
+    panel.hidden = false; panelOpen = true;
+    requestAnimationFrame(() => requestAnimationFrame(() => panel.classList.add('show')));
+    (list.querySelector('[aria-checked="true"]') || list.firstChild).focus({ preventScroll: true });
+  };
+  $('setBtn').addEventListener('click', open);
+  $('panelClose').addEventListener('click', e => close(e.detail === 0));   // keyboard click: back to the set button
+  panel.addEventListener('click', e => { if (e.target === panel) close(); });
+  panel.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); close(true); return; }
+    if (e.key !== 'Tab') return;
+    // keep focus inside the dialog
+    const f = [...panel.querySelectorAll('button, input')].filter(el => !el.closest('[hidden]') && el.offsetParent);
+    if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f.at(-1).focus(); }
+    else if (!e.shiftKey && document.activeElement === f.at(-1)) { e.preventDefault(); f[0].focus(); }
+  });
+  $('aboutOpen').addEventListener('click', () => { view(true); $('aboutBack').focus({ preventScroll: true }); $('panelAbout').scrollTop = 0; });
+  $('aboutBack').addEventListener('click', () => { view(false); $('aboutOpen').focus({ preventScroll: true }); });
+  $('customForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const phrase = $('customPhrase').value.trim();
+    if (!phrase) { $('customPhrase').focus(); return; }
+    onCustom({ phrase, meaning: $('customMeaning').value.trim(), target: $('customTarget').value });
+    close();
+  });
+}
+
 export function showFallback() { $('fallback').hidden = false; canvas.hidden = true; $('intro').hidden = true; }
 export function markReady() { document.body.classList.add('ready'); }
 
-// ── the hundredth: the full tahlīl ──
-// The formula for completing the hundred after the prayer, as reported in Ṣaḥīḥ Muslim.
-const TAHLIL = {
-  // one natural phrase per line, so no line ever breaks inside a phrase
-  ar: ['لَا إِلَٰهَ إِلَّا ٱللَّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ،', 'لَهُ ٱلْمُلْكُ وَلَهُ ٱلْحَمْدُ،', 'وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ'],
-  tr: ['Lā ilāha illa-llāhu waḥdahu lā sharīka lah,', 'lahu-l-mulku wa lahu-l-ḥamdu, wa huwa ʿalā kulli shayʾin qadīr.'],
-  gs: 'There is no god but God alone, without partner. His is the dominion and His is the praise, and He has power over all things.',
-};
+// ── the moment a set completes (for the tasbīḥ, the full tahlīl) ──
 // lines of words, revealed in order; a hyphenated word is kept whole so it never splits
 function fillLines(el, lines, start, perWord) {
   el.textContent = '';
@@ -202,13 +248,19 @@ function fillLines(el, lines, start, perWord) {
   return i;
 }
 export const moment = {
-  // shows the tahlīl; onNext runs when the visitor begins the next round. The prompt (and
-  // the gesture that dismisses) waits until the words have appeared.
-  show(onNext) {
+  // closing: { eyebrow, ar: [lines] or big: text, tr: [lines], gs }. onNext runs when the
+  // visitor begins the next round. The prompt (and the gesture that dismisses) waits until
+  // the words have appeared.
+  show(closing, onNext) {
     const el = $('moment');
-    const words = fillLines($('momentAr'), TAHLIL.ar, 0, true);   // Arabic: word by word
-    const after = fillLines($('momentTr'), TAHLIL.tr, words + 1, false);   // then each line whole
-    $('momentGs').innerHTML = `<span class="w" style="--i:${after + 1}">${TAHLIL.gs}</span>`;
+    $('momentTitle').textContent = closing.eyebrow;
+    $('momentAr').hidden = !closing.ar; $('momentBig').hidden = !closing.big;
+    let words = 0;
+    if (closing.ar) words = fillLines($('momentAr'), closing.ar, 0, true);   // Arabic: word by word
+    else words = fillLines($('momentBig'), [closing.big], 0, true);
+    const after = fillLines($('momentTr'), closing.tr, words + 1, false);   // then each line whole
+    const gs = document.createElement('span'); gs.className = 'w'; gs.style.setProperty('--i', after + 1); gs.textContent = closing.gs;
+    $('momentGs').replaceChildren(gs);
     el.hidden = false;
     document.body.classList.add('resting');
     let ready = false, done = false;

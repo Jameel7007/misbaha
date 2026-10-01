@@ -13,7 +13,7 @@
 <div class="vignette" aria-hidden="true"></div>
 
 <header class="dhikr">
-  <div class="eyebrow">Misbaḥa · 99 beads</div>
+  <button class="set-btn" type="button" id="setBtn" aria-haspopup="dialog" aria-controls="panel"><span class="eyebrow" id="setName">Tasbīḥ after prayer</span><span class="chev" aria-hidden="true"></span></button>
   <div class="phrase" id="phrase">
     <p class="arabic" lang="ar" dir="rtl" id="ar">سُبْحَانَ ٱللَّٰهِ</p>
     <p class="translit" id="tr">Subḥāna-llāh</p>
@@ -72,11 +72,53 @@
   </div>
 </div>
 
+<!-- choosing a dhikr, and the About page -->
+<div class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" hidden>
+  <div class="panel-sheet">
+    <div class="panel-head">
+      <h2 class="panel-title" id="panelTitle">Choose a dhikr</h2>
+      <button class="panel-close" type="button" id="panelClose" aria-label="Close">×</button>
+    </div>
+    <div class="panel-body" id="panelSets">
+      <div class="sets" id="sets" role="radiogroup" aria-labelledby="panelTitle"></div>
+      <form class="custom" id="customForm" autocomplete="off">
+        <h3 class="custom-title">Your own</h3>
+        <label class="field"><span>Phrase</span><input id="customPhrase" maxlength="80" required dir="auto" placeholder="Any phrase, in any script"></label>
+        <label class="field"><span>Meaning <i>(optional)</i></span><input id="customMeaning" maxlength="120" dir="auto"></label>
+        <label class="field narrow"><span>Count to</span><input id="customTarget" type="number" inputmode="numeric" min="1" max="9999" step="1" required></label>
+        <button class="btn primary" type="submit">Use this</button>
+      </form>
+      <button class="about-link" type="button" id="aboutOpen">About the misbaḥa and this page</button>
+    </div>
+    <article class="panel-body about" id="panelAbout" hidden>
+      <p class="lede">A <b>misbaḥa</b> (also <i>subḥa</i>, or <i>tasbīḥ</i>; <i>tespih</i> in Turkish) is a strand of beads for keeping count in <i>dhikr</i>, the remembrance of God, so the heart can stay with the words rather than the numbers.</p>
+      <h3>The strand</h3>
+      <p>Ninety-nine beads in three thirty-threes, divided by two small separators. A longer bead, the <i>imām</i>, gathers the ends and carries the tassel. Passing the imām after the ninety-ninth bead completes the hundred.</p>
+      <h3>The three phrases</h3>
+      <dl class="phrases">
+        <dt lang="ar" dir="rtl">سُبْحَانَ ٱللَّٰهِ</dt><dd><i>Subḥāna-llāh</i>: glory be to God</dd>
+        <dt lang="ar" dir="rtl">ٱلْحَمْدُ لِلَّٰهِ</dt><dd><i>Al-ḥamdu li-llāh</i>: all praise belongs to God</dd>
+        <dt lang="ar" dir="rtl">ٱللَّٰهُ أَكْبَرُ</dt><dd><i>Allāhu akbar</i>: God is the greatest</dd>
+      </dl>
+      <p>After the prayer, each is said thirty-three times, and the hundred is completed with the tahlīl, <i>lā ilāha illa-llāhu waḥdahu lā sharīka lah…</i>, as reported in Ṣaḥīḥ Muslim. Another narration completes it with a thirty-fourth <i>Allāhu akbar</i>; both are offered here. Practice varies, so follow your own teacher.</p>
+      <h3>Using this page</h3>
+      <ul>
+        <li>Press <kbd>Space</kbd>, <kbd>Enter</kbd> or <kbd>↓</kbd>, or tap anywhere, to pass one bead. Taps are never dropped.</li>
+        <li><b>Hold</b> lets the strand fall to the rug; drag any bead to lift it.</li>
+        <li>Choose the beads (amber, olive, ebony), sound and a quiet ambience in the controls.</li>
+        <li>Each set remembers its count on this device. <b>Reset</b> starts the current set again.</li>
+      </ul>
+      <button class="about-link" type="button" id="aboutBack">← Back to the sets</button>
+    </article>
+  </div>
+</div>
+
 <!-- the hundredth: the full tahlīl, then the next round -->
 <div class="moment" id="moment" role="dialog" aria-modal="true" aria-labelledby="momentTitle" hidden>
   <div class="moment-inner">
     <h2 class="moment-eyebrow" id="momentTitle">The hundredth</h2>
     <p class="moment-ar" lang="ar" dir="rtl" id="momentAr"></p>
+    <p class="moment-big" id="momentBig" hidden></p>
     <p class="moment-tr" id="momentTr"></p>
     <p class="moment-gs" id="momentGs"></p>
     <button class="intro-begin moment-next" type="button" id="nextRound">
