@@ -550,6 +550,80 @@ slow counting; per-second loudness of the ambience against the clicks; in the li
 the counts of clicks, landings and ney phrases through real input; the production and
 single-file builds play both, with no console errors.
 
+## Stage 8: performance, phones and accessibility
+
+**How it was measured first.** A headless audit at five screen sizes (desktop, a short
+laptop, a phone, a small phone, a phone on its side) projects the hand and the top 1.6 m
+of the strand onto the screen and measures how much of that box any text or control
+covers, lists every tap target under 44 px, and walks the Tab order. Before this stage:
+on a small phone the count ring sat on the hand and the controls on the strand; on a
+phone on its side the hint ran across the strand; almost every button was 38–40 px tall;
+the Begin button stayed in the Tab order after it had lifted away; and the canvas showed
+no focus.
+
+**Phones: a bar and a sheet.** On narrow screens (760 px or less) and short ones (560 px
+or less, a phone on its side) the control rail becomes a bar at the bottom with Count /
+Hold and *More*. More opens the rest (beads, Sound, Flute, Reset) as a sheet above the bar.
+- While the sheet is open, an invisible layer covers the rest of the screen, so a tap
+  outside closes it without passing a bead.
+- While it's closed, its controls are `inert`: not focusable, not read out.
+- *Next bead* goes: on a phone, tapping anywhere passes a bead.
+- On a phone on its side, the header shrinks to a column on the left and the bar sits
+  under it.
+
+**Framing the strand into the free space.** The header and the bar leave a region of the
+screen free (`ui.freeRegion()`). The camera rig frames each mode's subject into it: in
+Count the hand and the top of the strand, in Hold the patch of rug the strand falls on.
+It pulls the camera back until the subject fits, then shifts the picture with a *view
+offset* (an off-centre projection, as a shift lens does: the camera still looks the same
+way, the picture just slides) until the subject sits in the middle of the region. The
+offset is part of the camera's state, so it eases like everything else. When a long phrase
+wraps to two lines and the header grows, a `ResizeObserver` re-aims the camera without
+undoing the user's own turning and zooming. On desktop nothing changes.
+
+**Tap targets.** Every button is at least 44 px tall. The set button in the header grew to
+44 px with negative margins, so the header's layout didn't move.
+
+**Adaptive quality** (`quality.js`). Two costs matter: pixels (the pixel ratio) and the
+lamp's shadow map. Four levels, from pixel ratio 2 with a 2048 px shadow down to ratio 1
+with 512 px. Antialiasing and soft shadows stay at every level.
+- **A first guess**, before any frames: from the GPU's name where the browser gives it,
+  the number of CPU cores and the memory; touch devices with very dense screens start one
+  level down.
+- **Then the page watches itself.** Every 90 frames it takes the median frame time
+  (ignoring a hidden tab, hitches over 100 ms, and the second after any change). Slower
+  than about 52 fps: one level down. Keeping up with a 60 Hz display for 8 windows in a
+  row: try one level up. If that fails at once, that level is never tried again, so it
+  can't oscillate.
+- Measured on the M2 Pro at phone size: the lowest level takes 1.9 ms of GPU time per
+  frame against 5.0 ms for the highest (about 40%). Under an artificial load (30 ms of work
+  each frame) it stepped down all four levels in 10 s, then climbed back to the top within
+  30 s once the load stopped.
+
+**Reduced motion** (`prefers-reduced-motion`, checked live, so changing the setting takes
+effect at once):
+- no camera glide at the start, and no easing when the mode changes: the camera goes
+  straight to where it's going;
+- a bead passes in a single physics step (3–4 ms), with no arc, and the thumb stays still;
+- the lift back onto the finger after Hold takes 0.25 s instead of 1.1 s;
+- every CSS transition (header, controls, sheet, phrase reveal, odometer, the hundredth)
+  is switched off, as are the dust motes' drift (Stage 1).
+
+**Keyboard.**
+- Space, Enter or ↓ pass a bead from anywhere except a focused control or field.
+- Tab reaches every control in visual order: set button, Count / Hold, Next bead,
+  materials, Sound, Flute, Reset, then the canvas.
+- The materials are a proper radio group: one Tab stop, and the arrow keys change the
+  material.
+- Esc on a control hands the keys back to the beads (Esc in the open sheet closes it).
+- Focus is visible: a 1.5 px ring on controls; the full-screen canvas shows a frame just
+  inside the screen edge, only when reached with Tab (not when focus returns to it after
+  a click, which would leave a frame on screen all the time).
+- The title screen is `inert` once it has lifted away, so Tab no longer finds its button.
+
+**One behaviour fixed on the way:** a tap made while the strand was lifting back onto
+the finger after Hold was dropped. It is now queued like any other.
+
 ## Interview questions this answers
 
 - *Why position-based dynamics over a force-based spring model?* It stays stable under
@@ -597,6 +671,14 @@ single-file builds play both, with no console errors.
 - *How do you find a measurement bug?* Here, excluding a new object from the bead mask
   changed the bead colours sharply, which revealed that an older object (the peg) had
   been counted as beads all along.
+- *How do you keep a 3D page smooth on weak devices?* Find the costs that scale (pixels,
+  shadow resolution), guess a starting level from the device, then watch the frame times
+  and step down or up with hysteresis so it can't oscillate.
+- *What is a view offset?* An off-centre projection: the picture shifts within the frame
+  while the camera keeps looking the same way, like a shift lens. Useful to centre a
+  subject in the part of the screen the UI leaves free.
+- *What does `inert` do?* It takes an element and everything in it out of focus and out
+  of the accessibility tree: right for a closed sheet or a dialog that has gone away.
 - *How do you play background music without an audible loop?* Cut recordings into
   phrases, play them in random order with random pauses, and schedule them on the audio
   clock ahead of time rather than from the frame loop.

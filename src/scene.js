@@ -179,7 +179,11 @@ export function addRoom(scene, tex, dimEnv) {
   return { floor, rug, wall };
 }
 
-// orbit camera that eases toward a goal; one preset per mode, plus the wide opening shot
+// orbit camera that eases toward a goal; one preset per mode, plus the wide opening shot.
+// On phones the header and the control bar take part of the screen, so each preset can be
+// framed into the free region: the subject (a box in the world) is pulled back until it
+// fits, then the picture is shifted (a view offset, so the camera still looks the same way)
+// until the subject sits in the middle of the region.
 const easeInOutCubic = t => t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
 export function createRig(camera) {
   const CAMS = {
@@ -188,14 +192,49 @@ export function createRig(camera) {
     intro: { tx: -0.6, ty: 3.4, tz: 0.8, dist: 13.5, az: 0.8, el: 0.3 },   // the room: wall, rug, strand
   };
   const params = mode => {
-    const p = Object.assign({}, CAMS[mode]), asp = camera.aspect;
+    const p = Object.assign({ ox: 0, oy: 0 }, CAMS[mode]), asp = camera.aspect;
     if (asp < 1) { p.dist *= Math.pow(1 / asp, 0.55); if (mode === 'count') p.ty = PEG.y - 0.35; }
+    if (frame.region && frame.subjects[mode]) fit(p, frame.subjects[mode], frame.region);
     return p;
   };
-  const cam = Object.assign({}, CAMS.count), goal = Object.assign({}, CAMS.count);
+  // frame.region: the free part of the screen in CSS pixels; subjects: per mode, corner points
+  const frame = { region: null, subjects: {}, w: 1, h: 1 };
+  const probe = new PerspectiveCamera(), v = new Vector3();
+  function place(cam, p) {
+    cam.position.set(p.tx + p.dist * Math.cos(p.el) * Math.sin(p.az), p.ty + p.dist * Math.sin(p.el), p.tz + p.dist * Math.cos(p.el) * Math.cos(p.az));
+    cam.lookAt(p.tx, p.ty, p.tz);
+  }
+  function screenBox(p, pts) {
+    probe.copy(camera); probe.clearViewOffset(); place(probe, p); probe.updateMatrixWorld(); probe.updateProjectionMatrix();
+    const b = [Infinity, Infinity, -Infinity, -Infinity];
+    for (const q of pts) {
+      v.copy(q).project(probe);
+      const x = (v.x + 1) / 2 * frame.w, y = (1 - v.y) / 2 * frame.h;
+      b[0] = Math.min(b[0], x); b[1] = Math.min(b[1], y); b[2] = Math.max(b[2], x); b[3] = Math.max(b[3], y);
+    }
+    return b;
+  }
+  function fit(p, pts, r) {
+    const rw = r.right - r.left, rh = r.bottom - r.top;
+    for (let i = 0; i < 4; i++) {   // on screen, size goes roughly as 1 / distance
+      const b = screenBox(p, pts), s = Math.max((b[2] - b[0]) / (rw * 0.92), (b[3] - b[1]) / (rh * 0.92));
+      if (s <= 1.01) break;
+      p.dist *= s;
+    }
+    const b = screenBox(p, pts);
+    p.ox = (b[0] + b[2]) / 2 - (r.left + r.right) / 2;
+    p.oy = (b[1] + b[3]) / 2 - (r.top + r.bottom) / 2;
+  }
+  const cam = Object.assign({ ox: 0, oy: 0 }, CAMS.count), goal = Object.assign({ ox: 0, oy: 0 }, CAMS.count);
   let glide = null;
   return {
     preset(mode) { Object.assign(goal, params(mode)); },
+    // the free region (or null) and the screen size; takes effect at the next preset()
+    setFrame(region, subjects, w, h) { Object.assign(frame, { region, subjects, w, h }); },
+    // after the free region changes without a mode change: re-aim only, keep the user's view
+    reframe(mode) { const p = params(mode); goal.ox = p.ox; goal.oy = p.oy; },
+    // reduced motion: no easing; the camera goes straight to where it's going
+    instant: false,
     snap() { Object.assign(cam, goal); glide = null; },
     // a scripted move from another preset to the goal: eased in and out, so no overshoot
     glide(from, seconds) { glide = { from: params(from), t: 0, dur: seconds }; Object.assign(cam, glide.from); },
@@ -211,11 +250,12 @@ export function createRig(camera) {
         for (const key in cam) cam[key] = glide.from[key] + (goal[key] - glide.from[key]) * e;
         if (glide.t >= glide.dur) glide = null;
       } else {
-        const k = 1 - Math.exp(-dt * 3.2);
+        const k = this.instant ? 1 : 1 - Math.exp(-dt * 3.2);
         for (const key in cam) cam[key] += (goal[key] - cam[key]) * k;
       }
-      camera.position.set(cam.tx + cam.dist * Math.cos(cam.el) * Math.sin(cam.az), cam.ty + cam.dist * Math.sin(cam.el), cam.tz + cam.dist * Math.cos(cam.el) * Math.cos(cam.az));
-      camera.lookAt(cam.tx, cam.ty, cam.tz);
+      place(camera, cam);
+      if (Math.abs(cam.ox) > 0.5 || Math.abs(cam.oy) > 0.5) camera.setViewOffset(frame.w, frame.h, cam.ox, cam.oy, frame.w, frame.h);
+      else if (camera.view) camera.clearViewOffset();
     },
   };
 }

@@ -32,6 +32,7 @@ npm run verify:colour     # the same rules, measured on screen under the lamp (n
 | `scripts/` | The colour scripts: `check-palette`, `calibrate-colour`, `verify-colour` |
 | `src/dhikr.js` | The dhikr sets (phrases, blocks, closing words), what to show at each count, saved progress |
 | `src/ui.js` | All DOM work: title, phrase, tally ring, controls, set picker and About, the completion moment |
+| `src/quality.js` | Adaptive quality: pixel ratio and shadow size, from a first guess and then the page's own frame times |
 | `src/audio.js` | The bead click (the original page's), rug landings, bowl bells, the ney ambience |
 | `src/ney/` | Ney recordings and their phrases (`npm run find:phrases`); credits in `src/ney/SOURCES.md` |
 | `src/input.js` | Pointer and keyboard handling |
@@ -48,5 +49,6 @@ How it all fits together: [docs/architecture.md](docs/architecture.md).
 - [x] Stage 4: Counting feedback
 - [x] Stage 5: A hand instead of the peg
 - [x] Stage 6: Sound
-- [x] Stage 7: Dhikr sets and memory (waiting for your check in a real browser)
-- [ ] Stage 8–9: see the spec
+- [x] Stage 7: Dhikr sets and memory
+- [x] Stage 8: Performance, phones and accessibility (waiting for your check on a real phone)
+- [ ] Stage 9: see the spec

@@ -72,7 +72,10 @@ export function createDust(scene, lamp, renderer) {
 
   const still = matchMedia('(prefers-reduced-motion: reduce)');
   return {
-    update(dt) { if (!still.matches) mat.uniforms.uTime.value += dt; },
+    update(dt) {
+      if (!still.matches) mat.uniforms.uTime.value += dt;
+      mat.uniforms.uPx.value = renderer.getPixelRatio();   // adaptive quality may change it
+    },
     setLevel(k) { mat.uniforms.uLevel.value = k; },
   };
 }

@@ -46,7 +46,7 @@ body.fonts .intro-title, body.fonts .intro-line { opacity: 1; transform: none; }
 .intro-load { width: 220px; height: 1px; margin: 48px auto 0; background: var(--line); transition: opacity .6s ease; }
 .intro-load i { display: block; height: 100%; width: 0; background: var(--amber); transition: width .45s ease; }
 body.loaded .intro-load { opacity: 0; }
-.intro-begin { display: inline-flex; align-items: center; margin-top: 34px; padding: 10px 16px; border: 0; background: none; cursor: pointer;
+.intro-begin { display: inline-flex; align-items: center; min-height: 44px; margin-top: 34px; padding: 10px 16px; border: 0; background: none; cursor: pointer;
   font: 400 clamp(15px, 1.35vw, 18px)/1 var(--ui); letter-spacing: .06em; color: var(--muted);
   opacity: 0; visibility: hidden; transform: translateY(8px); transition: opacity .8s ease, transform .9s cubic-bezier(.2, .75, .2, 1), color .3s ease, visibility 0s .8s; }
 body.loaded .intro-begin { opacity: 1; visibility: visible; transform: none; transition-delay: .15s, .15s, 0s, 0s; }
@@ -63,7 +63,8 @@ body.loaded .intro-begin { opacity: 1; visibility: visible; transform: none; tra
 body.loaded .intro { cursor: pointer; }
 
 /* ── the set button in the header ── */
-.set-btn { pointer-events: auto; display: inline-flex; align-items: center; gap: 8px; margin: -6px -8px; padding: 6px 8px; border: 1px solid transparent; background: none; cursor: pointer; }
+/* 44 px tall to tap; the negative margins keep it sitting where the 13 px label sits */
+.set-btn { pointer-events: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin: -15.5px -8px; padding: 0 8px; border: 1px solid transparent; background: none; cursor: pointer; }
 .set-btn:hover, .set-btn:focus-visible { border-color: var(--line); }
 .set-btn:hover .eyebrow, .set-btn:focus-visible .eyebrow { color: var(--ink); }
 .set-btn .chev { width: 7px; height: 7px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: translateY(-2px) rotate(45deg); }
@@ -100,7 +101,7 @@ body.loaded .intro { cursor: pointer; }
 .field input { min-height: 44px; padding: 8px 12px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, .03); color: var(--ink); font: 400 16px/1.3 var(--ui); }
 .field input:focus { outline: 1px solid var(--ink); outline-offset: 1px; }
 .custom .btn.primary { grid-column: 2; align-self: end; min-height: 44px; }
-.about-link { margin-top: 18px; padding: 10px 0; border: 0; background: none; color: var(--muted); font: italic 400 17px/1.3 var(--serif); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line-strong); }
+.about-link { min-height: 44px; margin-top: 18px; padding: 10px 0; border: 0; background: none; color: var(--muted); font: italic 400 17px/1.3 var(--serif); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line-strong); }
 .about-link:hover { color: var(--ink); }
 .about { font-size: 14px; line-height: 1.6; color: #d9d2c4; }
 .about .lede { font: italic 400 19px/1.5 var(--serif); color: var(--ink); margin: 4px 0 6px; }
@@ -199,17 +200,23 @@ body.ready .vignette { opacity: 1; }
 .meta { display: flex; gap: 14px; margin-top: 12px; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 
 /* ── control rail ── */
-.rail { position: fixed; top: calc(var(--gutter) + env(safe-area-inset-top, 0px)); right: var(--gutter); width: 236px;
+.rail { position: fixed; z-index: 3; top: calc(var(--gutter) + env(safe-area-inset-top, 0px)); right: var(--gutter); width: 236px;
   display: grid; gap: 16px; padding: 16px; border: 1px solid var(--line); background: var(--panel);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.rail-more { display: grid; gap: 16px; }
+.more { display: none; }
+.more .chev { width: 7px; height: 7px; margin-left: 10px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: translateY(2px) rotate(-135deg); transition: transform .3s ease; }
+.rail.open .more .chev { transform: translateY(-2px) rotate(45deg); }
+.sheet-scrim { position: fixed; inset: 0; z-index: 2; }
 .group { display: grid; gap: 8px; }
 .label { font: 500 10.5px/1 var(--ui); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
 .seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line-strong); }
-.seg button { background: none; border: 0; padding: 9px 0; cursor: pointer; min-height: 38px; }
+.seg button { background: none; border: 0; padding: 9px 0; cursor: pointer; min-height: 44px; }
 .seg button + button { border-left: 1px solid var(--line-strong); }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--night); }
 .swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.swatch { display: grid; justify-items: center; gap: 7px; padding: 9px 2px 8px; border: 1px solid transparent; background: none;
+.swatch { display: grid; justify-items: center; gap: 7px; min-height: 44px; padding: 9px 2px 8px; border: 1px solid transparent; background: none;
   color: var(--muted); cursor: pointer; font: italic 15px/1 var(--serif); }
 .swatch .dot { width: 24px; height: 24px; border-radius: 50%; background: var(--c);
   box-shadow: inset -3px -4px 6px rgba(0,0,0,.45), inset 3px 3px 5px rgba(255,255,255,.28); }
@@ -217,12 +224,16 @@ body.ready .vignette { opacity: 1; }
 .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
 .row .btn { padding-inline: 4px; }
 #sound[aria-pressed="true"], #ambience[aria-pressed="true"] { background: var(--ink); color: var(--night); border-color: var(--ink); }
-.btn { border: 1px solid var(--line-strong); background: none; padding: 9px 10px; min-height: 38px; cursor: pointer; }
+.btn { border: 1px solid var(--line-strong); background: none; padding: 9px 10px; min-height: 44px; cursor: pointer; }
 .btn:hover { border-color: var(--ink); }
 .btn.primary { background: var(--amber); border-color: var(--amber); color: var(--on-amber); font-weight: 500; width: 100%; }
 .btn.primary:hover { filter: brightness(1.08); }
 .btn kbd { font: 11px/1 var(--ui); opacity: .6; margin-left: 6px; }
-button:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
+button:focus-visible, a:focus-visible { outline: 1.5px solid var(--ink); outline-offset: 2px; }
+/* the canvas fills the screen, so its focus shows as a frame just inside the edges; only when
+   reached with Tab (main.js), not when focus returns to it after a click */
+.focus-frame { position: fixed; inset: 8px; z-index: 1; border: 1.5px solid var(--ink); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+body.canvas-tabbed .focus-frame { opacity: .6; }
 
 .hint { position: fixed; left: var(--gutter); bottom: calc(var(--gutter) + env(safe-area-inset-bottom, 0px)); max-width: 380px; margin: 0;
   font: italic 17px/1.4 var(--serif); color: var(--muted); pointer-events: none; }
@@ -239,17 +250,35 @@ button:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
   .gloss { font-size: 12px; }
   .tally { --ring: 104px; gap: 14px; margin-top: 10px; }
   .count .num { font-size: 40px; }
-  .rail { top: auto; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; width: auto;
-    grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; }
-  .rail .group.varieties { grid-column: 1 / -1; order: -1; }
-  .rail .label { display: none; }
-  .swatches { grid-template-columns: repeat(3, 1fr); }
-  .swatch { grid-auto-flow: column; justify-content: center; padding: 7px 4px; }
-  .swatch .dot { width: 18px; height: 18px; }
-  .btn .kbdk { display: none; }
-  .hint { display: none; }
 }
-@media (max-height: 640px) and (min-width: 761px) {
+/* compact (phones, and short landscape screens): the controls become a bar at the bottom:
+   Count / Hold and More; More opens the rest as a sheet above the bar. Next bead goes:
+   tapping anywhere passes a bead. */
+@media (max-width: 760px), (max-height: 560px) {
+  .rail { top: auto; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); left: calc(12px + env(safe-area-inset-left, 0px)); right: calc(12px + env(safe-area-inset-right, 0px));
+    width: auto; grid-template-columns: 1fr auto; gap: 8px; padding: 8px; }
+  .rail .label, .rail .next-group, .hint { display: none; }
+  .more { display: inline-flex; align-items: center; justify-content: center; min-width: 104px; }
+  .rail.open .more { border-color: var(--ink); }
+  .rail-more { position: absolute; left: -1px; right: -1px; bottom: calc(100% + 8px); gap: 10px; padding: 12px;
+    border: 1px solid var(--line); background: rgba(18, 21, 27, .94); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    opacity: 0; visibility: hidden; transform: translateY(10px);
+    transition: opacity .25s ease, transform .35s cubic-bezier(.2, .75, .2, 1), visibility 0s .35s; }
+  .rail.open .rail-more { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+  .swatch { grid-auto-flow: column; justify-content: center; align-items: center; padding: 7px 4px; }
+  .swatch .dot { width: 18px; height: 18px; }
+}
+/* landscape phones: the header shrinks to a column on the left, the bar sits under it */
+@media (max-height: 560px) and (min-width: 761px) {
+  .dhikr { width: 330px; }
+  .arabic { font-size: 34px; }
+  .translit { font-size: 17px; }
+  .gloss { font-size: 12px; }
+  .tally { --ring: 92px; gap: 14px; margin-top: 8px; }
+  .count .num { font-size: 36px; }
+  .rail { right: auto; width: 330px; }
+}
+@media (max-height: 640px) and (min-height: 561px) and (min-width: 761px) {
   .arabic { font-size: 44px; }
   .tally { --ring: 118px; margin-top: 10px; }
   .count .num { font-size: 46px; }
@@ -257,5 +286,5 @@ button:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
 }
 @media (prefers-reduced-motion: reduce) {
   #gl, .vignette, .phrase, .phrase .w, .ring line, .ring circle, .moment, .moment .w, .panel, .panel-sheet, .od-strip, .intro, .intro-title, .intro-line, .intro-begin,
-  .dhikr, .rail, .hint { transition: none !important; }
+  .dhikr, .rail, .rail-more, .more .chev, .focus-frame, .hint { transition: none !important; }
 }

@@ -127,6 +127,7 @@ export function showTally(v, ring, round) {
 }
 export function showSetName(name) { $('setName').textContent = name; }
 
+// a radio group: one Tab stop (the chosen material); the arrow keys move the choice
 export function buildSwatches(varieties, onPick) {
   const sw = $('swatches');
   for (const [k, v] of Object.entries(varieties)) {
@@ -136,9 +137,20 @@ export function buildSwatches(varieties, onPick) {
     b.addEventListener('click', () => onPick(k));
     sw.appendChild(b);
   }
+  sw.addEventListener('keydown', e => {
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+    if (!step) return;
+    e.preventDefault();
+    const all = [...sw.children], i = all.indexOf(document.activeElement);
+    const next = all[(i + step + all.length) % all.length];
+    onPick(next.dataset.key); next.focus();
+  });
 }
 export function showVariety(key) {
-  document.querySelectorAll('.swatch').forEach(b => b.setAttribute('aria-checked', String(b.dataset.key === key)));
+  document.querySelectorAll('.swatch').forEach(b => {
+    b.setAttribute('aria-checked', String(b.dataset.key === key));
+    b.tabIndex = b.dataset.key === key ? 0 : -1;
+  });
 }
 
 export function showMode(m) {
@@ -164,9 +176,54 @@ export function bindControls({ onMode, onNext, onSound, onReset, onRoomTone }) {
   $('reset').addEventListener('click', onReset);
   // A mouse or touch click leaves focus on the button, which would swallow Space.
   // Hand focus back to the beads; keyboard clicks (detail 0) keep it for Tab navigation.
-  document.querySelector('.rail').addEventListener('click', e => {
-    if (e.detail > 0 && e.target.closest('button')) canvas.focus({ preventScroll: true });
+  $('rail').addEventListener('click', e => {
+    if (e.detail > 0 && e.target.closest('button') && e.target.closest('button') !== $('more')) canvas.focus({ preventScroll: true });
   });
+  // Escape on a control hands the keys back to the beads (Space passes a bead again)
+  $('rail').addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (sheetOpen) { e.preventDefault(); sheet(false); $('more').focus(); return; }
+    e.preventDefault(); canvas.focus({ preventScroll: true });
+  });
+  // the bottom sheet (compact layouts): More opens the rest of the controls above the bar;
+  // a tap anywhere outside closes it without passing a bead; closed, its controls are inert
+  $('more').addEventListener('click', e => {
+    sheet(!sheetOpen);
+    if (sheetOpen && e.detail === 0) $('railMore').querySelector('button:not([tabindex="-1"])').focus();
+  });
+  $('sheetScrim').addEventListener('pointerdown', e => { e.preventDefault(); sheet(false); });
+  compact.addEventListener('change', () => sheet(false));
+  sheet(false);
+  // the canvas shows its focus frame only when reached with Tab
+  let tabbed = false;
+  window.addEventListener('keydown', e => { tabbed = e.key === 'Tab'; }, true);
+  window.addEventListener('pointerdown', () => { tabbed = false; }, true);
+  canvas.addEventListener('focus', () => document.body.classList.toggle('canvas-tabbed', tabbed));
+  canvas.addEventListener('blur', () => document.body.classList.remove('canvas-tabbed'));
+}
+
+// compact: phones and short landscape screens (style.css uses the same query)
+export const compact = matchMedia('(max-width: 760px), (max-height: 560px)');
+let sheetOpen = false;
+function sheet(open) {
+  sheetOpen = open && compact.matches;
+  $('rail').classList.toggle('open', sheetOpen);
+  $('more').setAttribute('aria-expanded', String(sheetOpen));
+  $('sheetScrim').hidden = !sheetOpen;
+  $('railMore').inert = compact.matches && !sheetOpen;
+}
+
+// the part of the screen the header and the controls leave free, for framing the strand
+// (compact layouts only; null otherwise): the header sits above it, or beside it when
+// the screen is wider than tall; the bar sits below it unless it's under the header
+export function freeRegion() {
+  if (!compact.matches) return null;
+  const w = innerWidth, h = innerHeight, pad = 12;
+  const parts = ['setBtn', 'phrase', 'ring', 'total', 'round'].map(id => $(id).getBoundingClientRect());
+  const head = { right: Math.max(...parts.map(r => r.right)), bottom: Math.max(...parts.map(r => r.bottom)) };
+  const bar = $('rail').getBoundingClientRect();
+  if (w > h) return { left: head.right + pad, top: pad, right: w - pad, bottom: (bar.left < head.right ? h : bar.top) - pad };
+  return { left: pad, top: head.bottom + pad, right: w - pad, bottom: bar.top - pad };
 }
 
 // ── the set picker and About ──
@@ -210,7 +267,7 @@ export function bindPanel({ getSets, getCustom, onPick, onCustom }) {
     if (e.key === 'Escape') { e.preventDefault(); close(true); return; }
     if (e.key !== 'Tab') return;
     // keep focus inside the dialog
-    const f = [...panel.querySelectorAll('button, input')].filter(el => !el.closest('[hidden]') && el.offsetParent);
+    const f = [...panel.querySelectorAll('button, input, a[href]')].filter(el => !el.closest('[hidden]') && el.offsetParent);
     if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f.at(-1).focus(); }
     else if (!e.shiftKey && document.activeElement === f.at(-1)) { e.preventDefault(); f[0].focus(); }
   });
@@ -331,6 +388,7 @@ export const intro = {
   begun() {
     document.body.classList.add('begun');
     $('intro').setAttribute('aria-hidden', 'true');
+    $('intro').inert = true;   // out of the Tab order once it has lifted away
     canvas.focus({ preventScroll: true });
   },
 };

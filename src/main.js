@@ -4,6 +4,7 @@ import * as dhikr from './dhikr.js';
 import { createDust } from './dust.js';
 import { createHand } from './hand.js';
 import { attachInput } from './input.js';
+import { createQuality } from './quality.js';
 import {
   KIND, NL, PEG, PEG_BACK, PEG_FRONT, PEG_R, RAD, X, clamp, dropPin, holdPin, impacts,
   layoutHang, passPin, pinTop, releaseGrab, settle, sim, step,
@@ -11,6 +12,7 @@ import {
 import { addRoom, createRig, createStage } from './scene.js';
 import { VARIETIES, createStrand } from './strand.js';
 import { makeTextures } from './textures.js';
+import { Box3, Vector3 } from 'three';
 import * as ui from './ui.js';
 
 const store = {
@@ -48,6 +50,8 @@ async function boot(stage) {
   if (import.meta.env.DEV) window.__stage.hand = hand;
   const rig = createRig(camera);
   const dust = createDust(scene, stage.lamp, renderer);
+  const quality = createQuality({ renderer, lamp: stage.lamp });
+  if (import.meta.env.DEV) window.__stage.quality = quality;
 
   // ── counting state ──
   // adv: the bead currently travelling onto the peg; queued: taps made while it travels
@@ -93,9 +97,10 @@ async function boot(stage) {
   sim.drag = DRAG.count;
 
   function startAdvance(auto) {
-    if (!started || resting || mode !== 'count' || rehang) return;
-    // a tap made while a bead is still moving is queued, never dropped: every tap is one bead
-    if (adv) { if (!auto) queued++; return; }
+    if (!started || resting || mode !== 'count') return;
+    // a tap made while a bead is still moving, or while the strand is lifted back onto the
+    // finger, is queued, never dropped: every tap is one bead
+    if (adv || rehang) { if (!auto) queued++; return; }
     passPin((sim.pin + 1) % NL);
     const k = 3 * sim.pin;
     const dx = X[k] - PEG.x, dy = X[k + 1] - PEG.y, a0 = Math.atan2(dy, dx);
@@ -104,7 +109,8 @@ async function boot(stage) {
     while (da < -Math.PI) da += 2 * Math.PI;
     // an unhurried pass takes 0.17 s; with taps waiting, each pass quickens (down to 0.05 s,
     // the fastest the thread constraints follow cleanly) so the strand catches up
-    const dur = queued > 0 || auto ? clamp(0.1 - 0.008 * queued, 0.05, 0.1) : 0.17;
+    // reduced motion: the bead arrives in one step, no arc
+    const dur = still() ? 1 / 60 : queued > 0 || auto ? clamp(0.1 - 0.008 * queued, 0.05, 0.1) : 0.17;
     adv = { t: 0, dur, a0, a1: a0 + da, r0: Math.hypot(dx, dy), r1: PEG_R + RAD[sim.pin] + 0.001, z0: X[k + 2] };
     if (!auto) { click(1); try { navigator.vibrate && navigator.vibrate(6); } catch (e) {} }
   }
@@ -141,13 +147,13 @@ async function boot(stage) {
     }
     if (rehang) {
       rehang.t += dt;
-      const tA = 1.1, top = pinTop(sim.pin);
+      const tA = still() ? 0.25 : 1.1, top = pinTop(sim.pin);   // reduced motion: a quick lift, no glide
       if (rehang.t < tA) {
         const e = easeInOut(rehang.t / tA);
         sim.pinTo = rehang.from.map((v, c) => v + (top[c] - v) * e);
       } else { sim.pinTo = top; sim.pegGoal = PEG_FRONT; }
       sim.bias = rehang.t > tA - 0.35 && rehang.t < tA + 0.8 ? 14 : 0;
-      if (rehang.t > tA + 1.3) { rehang = null; sim.bias = 0; }
+      if (rehang.t > tA + 1.3) { rehang = null; sim.bias = 0; if (queued > 0) { queued--; startAdvance(false); } }
     }
     const sp = 6 * dt;
     sim.pegEnd += clamp(sim.pegGoal - sim.pegEnd, -sp, sp);
@@ -244,13 +250,27 @@ async function boot(stage) {
     onUnlock: unlockAudio,
   });
 
+  // what the camera keeps in view on phones: in Count the hand and the top of the strand,
+  // in Hold the patch of rug the strand falls on
+  const subjects = (() => {
+    hand.update(1, -1); hand.group.updateMatrixWorld(true);
+    const b = new Box3().setFromObject(hand.group);
+    b.expandByPoint(new Vector3(PEG.x - 0.2, PEG.y - 1.6, 0.2));
+    const corners = box => [0, 1, 2, 3, 4, 5, 6, 7].map(i => new Vector3(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z));
+    return { count: corners(b), hold: corners(new Box3(new Vector3(-1.3, 0, -1), new Vector3(1.3, 0.3, 1))) };
+  })();
+  const frameRegion = () => rig.setFrame(ui.freeRegion(), subjects, window.innerWidth, window.innerHeight);
   function resize() {
     const w = window.innerWidth, h = window.innerHeight;
+    quality.refresh();
     renderer.setSize(w, h, false);
     camera.aspect = w / h; camera.updateProjectionMatrix();
+    frameRegion();
     rig.preset(mode);
   }
   window.addEventListener('resize', resize);
+  // the header grows when a phrase wraps to two lines: re-aim the camera, keep the user's view
+  new ResizeObserver(() => { if (started) { frameRegion(); rig.reframe(mode); } }).observe(document.querySelector('.dhikr'));
 
   // ── boot ──
   const savedVariety = store.get('variety');
@@ -271,6 +291,7 @@ async function boot(stage) {
   await renderer.compileAsync(scene, camera);
   ui.intro.progress(0.92);
   await fonts;
+  resize(); rig.snap();   // the header's size is known once the fonts are in
   ui.intro.progress(1);
 
   // ── Begin: the title lifts away, the lamp fades up, the camera glides in ──
@@ -280,7 +301,7 @@ async function boot(stage) {
     unlockAudio();   // the Begin press or tap is the user gesture browsers require for audio
     started = true;
     ui.intro.begun();
-    if (still()) { stage.setLightLevel(1); dust.setLevel(1); ui.revealPhrase(); return; }
+    if (still()) { stage.setLightLevel(1); dust.setLevel(1); ui.revealPhrase(); rig.snap(); return; }
     lampUp = { t: 0, delay: 0.3, dur: 2.2 };
     rig.glide('intro', 3.0);
     setTimeout(ui.revealPhrase, 2000);
@@ -288,6 +309,7 @@ async function boot(stage) {
 
   let acc = 0, last = performance.now();
   function frame(now) {
+    quality.frame(now - last, now);
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     acc += dt;
     let n = 0;
@@ -303,8 +325,9 @@ async function boot(stage) {
     glowTarget *= Math.exp(-dt / 0.3);
     glowLevel += (glowTarget - glowLevel) * (1 - Math.exp(-dt / 0.06));
     stage.pegGlow.intensity = glowLevel * PEG_GLOW;
+    rig.instant = still();   // reduced motion: no camera easing
     rig.update(dt);
-    hand.update(dt, adv ? sim.pin : -1);   // the thumb follows the bead passing over the finger
+    hand.update(dt, adv && !still() ? sim.pin : -1);   // the thumb follows the bead passing over the finger (still, with reduced motion)
     dust.update(dt);
     strand.update();
     renderer.render(scene, camera);
