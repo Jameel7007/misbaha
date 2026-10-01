@@ -1,7 +1,7 @@
 // Checks the daylight material colours (src/palette.js) against the palette rules, using the
 // beads' own material colours. No browser needed. Run: npm run check:palette
 // The lit scene is checked separately by npm run verify:colour.
-import { FLOOR, RUG, RULES, WALL, hexToLab, labToHex, labToLch, lchToLab } from '../src/palette.js';
+import { FLOOR, HAND, RUG, RULES, WALL, hexToLab, labToHex, labToLch, lchToLab } from '../src/palette.js';
 import { VARIETIES } from '../src/strand.js';
 import { checkRules } from './lib/rules.mjs';
 
@@ -9,6 +9,7 @@ const groups = [
   { title: 'rug', view: 'daylight', colours: RUG },
   { title: 'floor', view: 'daylight', colours: FLOOR },
   { title: 'wall', view: 'daylight', colours: WALL },
+  { title: 'hand', view: 'daylight', colours: HAND },
 ];
 // each bead's colour is its material's dark tone blended toward the light one by
 // 0.25 + 0.75 × a random tone (strand.js), in linear RGB: 0.625 on average. The typical

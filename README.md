@@ -23,7 +23,8 @@ npm run verify:colour     # the same rules, measured on screen under the lamp (n
 | File | Job |
 | --- | --- |
 | `src/physics.js` | Owns every simulation array; `step()` advances the strand one fixed tick |
-| `src/strand.js` | Builds the bead, thread, tassel and peg meshes; reads positions only |
+| `src/strand.js` | Builds the bead, thread and tassel meshes; reads positions only |
+| `src/hand.js` | The low-poly hand: the index finger the strand hangs on, the thumb's IK stroke |
 | `src/scene.js` | Renderer, the lamp, the wall and its glow, reflections, rug, camera rig |
 | `src/dust.js` | Dust motes drifting in the lamp's beam (switch: `DUST`) |
 | `src/textures.js` | Procedural canvas textures: grain, amber clouds, fringe, the rug's field, border and corners, the wall tiles |
@@ -42,5 +43,6 @@ How it all fits together: [docs/architecture.md](docs/architecture.md).
 - [x] Stage 1: Art direction and lighting
 - [x] Stage 2: Amber that looks like amber
 - [x] Stage 3: Opening and typography
-- [x] Stage 4: Counting feedback (waiting for your check in a real browser)
-- [ ] Stage 5–9: see the spec
+- [x] Stage 4: Counting feedback
+- [x] Stage 5: A hand instead of the peg (waiting for your check in a real browser)
+- [ ] Stage 6–9: see the spec

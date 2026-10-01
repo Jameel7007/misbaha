@@ -376,6 +376,54 @@ positions because the separators come after beads 33 and 66.
   it wait until the words have appeared, so fast tapping can't skip past the moment;
 - dismissing starts the next round at 0 without passing a bead.
 
+## Stage 5: a hand instead of the peg
+
+**Physics stays simple.** The finger is a capsule collider (`physics.js`): a cylinder with a
+rounded tip, 0.9 units long, radius 0.075. A bead is pushed out from the closest point on
+the capsule's axis. The finger slides back 1 unit for Hold mode (out of the loop, clear of
+the wall) and returns for Count, sliding back into the lifted loop. The rest of the hand
+is visual only.
+
+**The hand** (`hand.js`) is a stylised, low-poly right hand built from seven-sided
+cylinders and faceted joints, flat-shaded:
+- the index finger extended toward the viewer, carrying the strand;
+- the other three fingers curled into a fist, kept behind the strand;
+- the back of the hand toward the camera;
+- the thumb resting on top of the index finger behind the current bead.
+
+It's grey plaster, like a sculptor's cast, so it implies no particular skin tone.
+
+**The thumb's stroke.** The thumb is two bones solved with two-bone inverse kinematics:
+given the base and the target for the tip, the law of cosines places the middle joint,
+bent outward (toward the back of the hand) rather than up. While a bead passes over the
+finger, the tip rides just behind that bead; afterwards it follows through, a little
+forward and lifted, then settles back. Measured at the normal view, the tip moves about
+25 px per pass on desktop and 16–17 px on a phone.
+
+**Settling within about half a second.** Measured first: after one tap the strand took
+over 5 s to settle (95% of bodies under 0.05 units/s). A real strand settles fast
+because of friction, so two kinds were added:
+- **drag** in Count mode (11 per second; Hold mode keeps 0.4, so a dropped strand still
+  falls naturally);
+- **finger friction**: beads touching the finger lose 30% of their motion each substep,
+  as on the rug.
+
+Result: 0.61–0.65 s. The last motion is the bottom of the loop finishing its one-bead
+shift.
+
+**Re-checked.** 99 taps at 30 ms and 100 at 50 ms counted exactly, with no tangling.
+The Hold round trip works, and so does the palette.
+
+**What the colour checks caught:**
+- The hand sits right under the lamp, and its upward facets outshone the beads (0.85
+  against 0.72). The plaster was made darker and faintly cool, so it renders as a neutral
+  grey that doesn't drift toward amber.
+- Excluding the hand from the bead measurement also exposed an old error: the peg had
+  been counted as part of the strand, so the Count-mode bead colours were measured too
+  dark (amber 0.38 instead of 0.64). Cobalt and turquoise had been deepened partly
+  because of that wrong number; with the corrected one they return closer to their
+  natural glaze values.
+
 ## Interview questions this answers
 
 - *Why position-based dynamics over a force-based spring model?* It stays stable under
@@ -415,6 +463,14 @@ positions because the separators come after beads 33 and 66.
   worst case (here 33 taps a second) through the real input path.
 - *How do you give feedback on rapid events without flicker?* Drive a smoothed level from
   decaying impulses instead of flashing on each event.
+- *What is two-bone IK?* Given a base, a target and two bone lengths, the law of cosines
+  gives where the middle joint must be; a "pole" direction picks which way it bends.
+- *How do you make a simulation settle quickly without looking sluggish?* Add the
+  damping a real object has (friction where it touches the finger, light drag), measure
+  the settling time, and keep the setting where the motion still looks natural.
+- *How do you find a measurement bug?* Here, excluding a new object from the bead mask
+  changed the bead colours sharply, which revealed that an older object (the peg) had
+  been counted as beads all along.
 - *How are Islamic star patterns constructed?* One classical way is Hankin's method:
   rays from each edge midpoint of a polygon tiling at a contact angle, stopped where
   they meet. Changing the angle changes the whole character of the pattern.

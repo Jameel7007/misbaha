@@ -4,7 +4,7 @@ import {
   Color, ConeGeometry, CylinderGeometry, InstancedBufferAttribute, InstancedMesh, LatheGeometry, Matrix4, Mesh,
   MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, SphereGeometry, Vector2, Vector3,
 } from 'three';
-import { CA, CB, KIND, N, NL, PEG, PEG_BACK, PEG_R, RNG_SEED, SIZE, SPIN, TONE, X, rng, sim } from './physics.js';
+import { CA, CB, KIND, N, NL, RNG_SEED, SIZE, SPIN, TONE, X, rng } from './physics.js';
 
 // a..b: the per-bead colour range; map: which texture the bead material uses;
 // glow: strength of the inner glow (amber only; wood is opaque);
@@ -71,21 +71,6 @@ function amberGlow(material, glow, cloudMap) {
 }
 
 export function createStrand(scene, tex) {
-  // ── the peg ──
-  const pegMat = new MeshPhysicalMaterial({ color: '#4a2c1b', map: tex.grain, roughness: 0.42, clearcoat: 0.5, clearcoatRoughness: 0.2 });
-  const pegGeo = new CylinderGeometry(PEG_R, PEG_R, 1, 36, 1, true); pegGeo.rotateX(Math.PI / 2);
-  const pegBody = new Mesh(pegGeo, pegMat);
-  const pegCap = new Mesh(new SphereGeometry(PEG_R, 32, 16), pegMat);
-  pegBody.castShadow = pegCap.castShadow = true;
-  scene.add(pegBody, pegCap);
-  function placePeg() {
-    const { pegEnd } = sim, len = Math.max(0.001, pegEnd - PEG_BACK);
-    pegBody.scale.set(1, 1, len);
-    pegBody.position.set(PEG.x, PEG.y, (PEG_BACK + pegEnd) / 2);
-    pegCap.position.set(PEG.x, PEG.y, pegEnd);
-    pegBody.visible = pegCap.visible = pegEnd > PEG_BACK + 0.05;
-  }
-
   // ── beads, separators, imam, thread, tassel ──
   const beadIdx = [], sepIdx = [];
   for (let i = 1; i < NL; i++) (KIND[i] === 0 ? beadIdx : sepIdx).push(i);
@@ -167,7 +152,6 @@ export function createStrand(scene, tex) {
     tassel.quaternion.setFromUnitVectors(vA.set(0, -1, 0), vB.normalize());
     tassel.position.set(X[3 * e2], X[3 * e2 + 1], X[3 * e2 + 2]);
     knot.position.copy(tassel.position);
-    placePeg();
   }
 
   function setVariety(key) {
@@ -190,5 +174,5 @@ export function createStrand(scene, tex) {
     threadMat.color.set(v.silk); tasselMat.color.set(v.silk);
   }
 
-  return { update, setVariety, materials: [beadMat, imamMat, sepMat, threadMat, tasselMat, pegMat] };
+  return { update, setVariety, materials: [beadMat, imamMat, sepMat, threadMat, tasselMat] };
 }

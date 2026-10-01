@@ -55,11 +55,17 @@ export const RUG = {
 export const WHITE_REF = { L: 0.62, C: 0.025, h: 90, note: 'undyed ivory wool' };
 export const FLOOR = { floor: { L: 0.44, C: 0.02, h: 240, role: 'area', note: 'cool slate beyond the rug, so a dark bead dropped off it still shows' } };
 export const WALL = {
-  cobalt:    { L: 0.355, C: 0.092, h: 266, role: 'area',   note: 'cobalt glaze: the stars' },
-  turquoise: { L: 0.44, C: 0.06,  h: 208, role: 'area',   note: 'copper turquoise glaze, a deep one: the crosses' },
+  cobalt:    { L: 0.40, C: 0.092, h: 266, role: 'area',   note: 'cobalt glaze: the stars' },
+  turquoise: { L: 0.50, C: 0.06,  h: 208, role: 'area',   note: 'copper turquoise glaze, a deep one: the crosses' },
   tinWhite:  { L: 0.78, C: 0.015, h: 90,  role: 'accent', note: 'tin-opacified white: small rosettes' },
   grout:     { L: 0.20, C: 0.01,  h: 60,  role: 'line',   note: 'joints between tiles' },
 };
+
+// the hand: grey plaster, like a sculptor's cast, so it implies no particular skin tone. It
+// sits right under the lamp, so it's kept darker than it would be elsewhere (its lamp-facing
+// facets must not outshine the beads), and faintly cool so the warm lamp renders it neutral
+// rather than drifting toward the beads' amber
+export const HAND = { plaster: { L: 0.39, C: 0.02, h: 240, role: 'area', note: 'grey plaster: the hand holding the strand' } };
 
 // colours that touch each other in the patterns (for the neighbour rule)
 export const NEIGHBOURS = [
@@ -105,3 +111,4 @@ const hexes = set => Object.fromEntries(Object.entries(set).map(([k, c]) => [k, 
 export const RUG_HEX = hexes(RUG);
 export const TILE_HEX = hexes(WALL);
 export const FLOOR_HEX = hexes(FLOOR).floor;
+export const HAND_HEX = hexes(HAND).plaster;

@@ -1,12 +1,12 @@
 // Measures the palette as it actually reaches the screen, under the lamp, tone mapping
 // and all, and checks the rendered colours against the same rules as the targets.
 // Needs the dev server running. Run: npm run verify:colour
-import { FLOOR, FLOOR_HEX, LAMP_KELVIN, RUG, RUG_HEX, TILE_HEX, WALL, deltaE, labToLch, lchToLab } from '../src/palette.js';
+import { FLOOR, FLOOR_HEX, HAND, HAND_HEX, LAMP_KELVIN, RUG, RUG_HEX, TILE_HEX, WALL, deltaE, labToLch, lchToLab } from '../src/palette.js';
 import { checkRules } from './lib/rules.mjs';
 import { GROUPS, beadColour, launch, open, peakLightness, probePoint, surfaceColours } from './lib/render.mjs';
 import { RULES } from '../src/palette.js';
 
-const SETS = { rug: [RUG, RUG_HEX], floor: [FLOOR, { floor: FLOOR_HEX }], wall: [WALL, TILE_HEX] };
+const SETS = { rug: [RUG, RUG_HEX], floor: [FLOOR, { floor: FLOOR_HEX }], wall: [WALL, TILE_HEX], hand: [HAND, { plaster: HAND_HEX }] };
 const browser = await launch();
 
 const beads = { hold: {}, count: {} };

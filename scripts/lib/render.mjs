@@ -35,7 +35,7 @@ export async function open(browser, variety, mode) {
     const g = document.getElementById('gl'), c = document.createElement('canvas'); c.width = g.width; c.height = g.height;
     const x = c.getContext('2d', { willReadFrequently: true });
     window.__grab = () => new Promise(res => requestAnimationFrame(() => requestAnimationFrame(() => { x.drawImage(g, 0, 0); res(x.getImageData(0, 0, c.width, c.height).data); })));
-    window.__room = o => [__stage.rug, __stage.floor, __stage.wall].some(r => { for (let p = o; p; p = p.parent) if (p === r) return true; return false; });
+    window.__room = o => [__stage.rug, __stage.floor, __stage.wall, __stage.hand?.group].filter(Boolean).some(r => { for (let p = o; p; p = p.parent) if (p === r) return true; return false; });
   });
   return page;
 }
@@ -45,10 +45,10 @@ export async function open(browser, variety, mode) {
 export function beadColour(page) {
   return page.evaluate(async () => {
     const full = await __grab();
-    const S = __stage, bg = S.scene.background, fog = S.scene.fog;
-    for (const o of [S.rug, S.floor, S.wall]) o.visible = false; S.scene.background = null; S.scene.fog = null;
+    const S = __stage, bg = S.scene.background, fog = S.scene.fog, room = [S.rug, S.floor, S.wall, S.hand.group];
+    for (const o of room) o.visible = false; S.scene.background = null; S.scene.fog = null;
     const bare = await __grab();
-    for (const o of [S.rug, S.floor, S.wall]) o.visible = true; S.scene.background = bg; S.scene.fog = fog;
+    for (const o of room) o.visible = true; S.scene.background = bg; S.scene.fog = fog;
     const L = [], A = [], B = [];
     for (let i = 0; i < full.length; i += 4) {
       if (0.2126 * bare[i] + 0.7152 * bare[i + 1] + 0.0722 * bare[i + 2] <= 2) continue;
@@ -64,6 +64,7 @@ export function probePoint(page, surface) {
   return page.evaluate(surface => {
     const S = __stage;
     if (surface === 'wall') return [S.glow.position.x, S.glow.position.y, S.wall.position.z];
+    if (surface === 'hand') { const g = S.hand.group.position; return [g.x, g.y + 0.075, g.z - 0.7]; }   // top of the index finger, behind the strand
     const L = S.lamp, d = L.target.position.clone().sub(L.position).normalize(), t = -L.position.y / d.y;
     return L.position.clone().addScaledVector(d, t).toArray();
   }, surface);
@@ -74,7 +75,7 @@ export function surfaceColours(page, surface, hexes, point) {
   return page.evaluate(async ({ surface, hexes, point }) => {
     const S = __stage, hidden = [];
     S.scene.traverse(o => { if ((o.isMesh || o.isPoints) && o.visible && !__room(o)) { o.visible = false; hidden.push(o); } });
-    const meshes = []; S[surface].traverse(o => o.isMesh && meshes.push(o));
+    const meshes = []; (surface === 'hand' ? S.hand.group : S[surface]).traverse(o => o.isMesh && meshes.push(o));
     if (surface === 'floor') S.rug.visible = false;
     const saved = meshes.map(m => [m.material.map, m.material.color.getHex()]);
     const v = new S.camera.position.constructor(...point).project(S.camera);
@@ -98,6 +99,7 @@ export const GROUPS = [
   { name: 'rug', surface: 'rug', view: 'hold', title: 'rug, at the centre of the pool (Hold)' },
   { name: 'floor', surface: 'floor', view: 'hold', title: 'floor beyond the rug (Hold)' },
   { name: 'wall', surface: 'wall', view: 'count', title: 'wall, where the glow is brightest (Count)' },
+  { name: 'hand', surface: 'hand', view: 'count', title: 'hand, on top of the index finger (Count)' },
 ];
 
 // the brightest pixels of the room with the strand hidden: the 99.9th-percentile OKLab

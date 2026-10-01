@@ -8,7 +8,7 @@ import {
   Group, Scene, SpotLight, SRGBColorSpace, Vector3, WebGLRenderer,
 } from 'three';
 import { FLOOR_HEX, LAMP_HEX } from './palette.js';
-import { clamp, PEG, PEG_BACK } from './physics.js';
+import { clamp, PEG, WALL_Z } from './physics.js';
 import { RUG, WALL_TILE } from './textures.js';
 
 const NIGHT = 0x0f1217;
@@ -17,7 +17,7 @@ const LAMP_COLOUR = LAMP_HEX;    // a colour temperature, calibrated as white ba
 // physical units: candela for the lamp and the wall glow (decay 2, 1 unit = 1 m)
 export const LIGHTS = {
   lamp: { intensity: 380, pos: [0.5, 12.5, 1.2], target: [0, 4, 0], angle: 0.2, penumbra: 0.5 },  // beam runs down the strand; on the rug: full within ~1.25, dark by ~2.5
-  glow: { intensity: 3, pos: [-1.3, 4.3, PEG_BACK + 1.2], distance: 7 },   // offset so it sits behind the strand from the Count camera
+  glow: { intensity: 3, pos: [-1.3, 4.3, WALL_Z + 1.2], distance: 7 },   // offset so it sits behind the strand from the Count camera
 };
 
 // throws if WebGL 2 is unavailable; the caller shows the fallback
@@ -173,7 +173,7 @@ export function addRoom(scene, tex, dimEnv) {
   const cols = 28, rows = 17;
   tiles.repeat.set(cols, rows);
   const wall = new Mesh(new PlaneGeometry(cols * WALL_TILE, rows * WALL_TILE), new MeshStandardMaterial({ map: tiles, roughness: 0.65, metalness: 0, dithering: true, ...dimEnv(0.12) }));
-  wall.position.set(0, rows * WALL_TILE / 2, PEG_BACK);
+  wall.position.set(0, rows * WALL_TILE / 2, WALL_Z);
   scene.add(wall);
 
   return { floor, rug, wall };

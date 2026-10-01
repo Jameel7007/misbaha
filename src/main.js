@@ -1,6 +1,7 @@
 // Boot, the counting / mode controller, and the frame loop.
 import { bell, chime, clack, setSoundEnabled, setVoice, unlockAudio } from './audio.js';
 import { createDust } from './dust.js';
+import { createHand } from './hand.js';
 import { attachInput } from './input.js';
 import {
   KIND, NL, PEG, PEG_BACK, PEG_FRONT, PEG_R, RAD, X, beadNo, clamp, dropPin, holdPin,
@@ -41,6 +42,9 @@ async function boot(stage) {
   if (import.meta.env.DEV) window.__stage = { ...stage, ...room };
   const strand = createStrand(scene, tex);
   strand.materials.forEach(stage.gateToLamp);
+  const hand = createHand(scene);
+  stage.gateToLamp(hand.material);
+  if (import.meta.env.DEV) window.__stage.hand = hand;
   const rig = createRig(camera);
   const dust = createDust(scene, stage.lamp, renderer);
 
@@ -57,6 +61,10 @@ async function boot(stage) {
   let glowTarget = 0, glowLevel = 0;
   const pulse = strength => { glowTarget = Math.max(glowTarget, strength); };
   const showCount = () => ui.showCount(beadNo(sim.pin), completed, round);
+  // drag: hanging on the finger the strand settles like a real one (friction between beads,
+  // the thread dragging over the finger); dropped on the rug it falls freely
+  const DRAG = { count: 11, hold: 0.4 };
+  sim.drag = DRAG.count;
 
   function startAdvance(auto) {
     if (!started || resting || mode !== 'count' || rehang) return;
@@ -119,6 +127,7 @@ async function boot(stage) {
   function setMode(m) {
     if (m === mode) return;
     mode = m;
+    sim.drag = DRAG[m];
     ui.showMode(m);
     queued = 0;
     if (m === 'hold') {
@@ -195,7 +204,7 @@ async function boot(stage) {
   await yieldFrame();
   // the room starts dark; compile every shader now so the first lit frame doesn't stall
   stage.setLightLevel(0); dust.setLevel(0);
-  rig.update(0); strand.update();
+  rig.update(0); strand.update(); hand.update(1, -1);
   await renderer.compileAsync(scene, camera);
   ui.intro.progress(0.92);
   await fonts;
@@ -231,6 +240,7 @@ async function boot(stage) {
     glowLevel += (glowTarget - glowLevel) * (1 - Math.exp(-dt / 0.06));
     stage.pegGlow.intensity = glowLevel * PEG_GLOW;
     rig.update(dt);
+    hand.update(dt, adv ? sim.pin : -1);   // the thumb follows the bead passing over the finger
     dust.update(dt);
     strand.update();
     renderer.render(scene, camera);
