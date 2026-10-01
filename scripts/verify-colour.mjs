@@ -6,7 +6,7 @@ import { checkRules } from './lib/rules.mjs';
 import { GROUPS, beadColour, launch, open, peakLightness, probePoint, surfaceColours } from './lib/render.mjs';
 import { RULES } from '../src/palette.js';
 
-const SETS = { rug: [RUG, RUG_HEX], floor: [FLOOR, { floor: FLOOR_HEX }], wall: [WALL, TILE_HEX], hand: [HAND, { plaster: HAND_HEX }] };
+const SETS = { rug: [RUG, RUG_HEX], floor: [FLOOR, { floor: FLOOR_HEX }], wall: [WALL, TILE_HEX], hand: [HAND, { stone: HAND_HEX }] };
 const browser = await launch();
 
 const beads = { hold: {}, count: {} };

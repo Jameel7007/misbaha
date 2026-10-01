@@ -22,10 +22,22 @@ export function checkRules(groups, beads, lit) {
         const cap = RULES.chromaBelowBeads * Math.min(b.amber.C, b.olive.C);
         if (c.C > cap) fail(`${k}: chroma ${c.C.toFixed(3)} > ${cap.toFixed(3)} (the beads must be the most saturated thing)`);
       }
+      // a carving (the hand) is an object, not a ground: beads don't lie on it, they pass over
+      // its finger and hang in front of it. A dark stone and dark ebony share a tone, and any
+      // polished surface right under the lamp reflects enough of it to set a floor on how
+      // dark it can render (about L 0.21 here), so an ebony bead reads against the carving
+      // by its lit side and its shine: the carving is checked against each bead's lit face,
+      // and must stay below amber's
+      if (c.role === 'carving') {
+        if (lit && c.L > b.amber.Lhi - RULES.valueMargin) fail(`${k}: lightness ${c.L.toFixed(2)} is above lit amber ${b.amber.Lhi.toFixed(2)} − ${RULES.valueMargin}`);
+        for (const [v, bc] of Object.entries(b)) { const e = deltaE(lchToLab(c), lchToLab(lit && bc.Lhi ? { ...bc, L: bc.Lhi } : bc)); if (e < RULES.figureGroundDE) fail(`${k} vs ${v} beads${lit ? ' (lit face)' : ''}: ΔE ${e.toFixed(3)} < ${RULES.figureGroundDE}`); }
+        continue;
+      }
       if (c.role !== 'area') continue;
-      // between dark ebony (its typical tone) and amber's lit faces: a hanging strand is
-      // judged by its lit side; its shadowed undersides are part of any hanging object
-      if (lit && (c.L < b.ebony.L + RULES.valueMargin || c.L > b.amber.Lhi - RULES.valueMargin)) fail(`${k}: lightness ${c.L.toFixed(2)} is not between ebony ${b.ebony.L.toFixed(2)} and lit amber ${b.amber.Lhi.toFixed(2)} (±${RULES.valueMargin})`);
+      // clear of dark ebony's typical tone (lighter or darker, by the margin) and below amber's
+      // lit faces: a hanging strand is judged by its lit side; its shadowed undersides are
+      // part of any hanging object
+      if (lit && (Math.abs(c.L - b.ebony.L) < RULES.valueMargin || c.L > b.amber.Lhi - RULES.valueMargin)) fail(`${k}: lightness ${c.L.toFixed(2)} is within ${RULES.valueMargin} of ebony ${b.ebony.L.toFixed(2)}, or above lit amber ${b.amber.Lhi.toFixed(2)} − ${RULES.valueMargin}`);
       for (const [v, bc] of Object.entries(b)) { const e = deltaE(lchToLab(c), lchToLab(bc)); if (e < RULES.figureGroundDE) fail(`${k} vs ${v} beads: ΔE ${e.toFixed(3)} < ${RULES.figureGroundDE}`); }
     }
   }

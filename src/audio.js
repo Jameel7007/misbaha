@@ -98,14 +98,20 @@ export function createEngine(ac) {
     src.connect(g); g.connect(out); src.start(when);
   }
   return {
-    // strength 0–1; soft: a landing on the rug, a little quieter
+    // strength 0–1; soft: a landing on the rug. Wool swallows the bright part of a click, so a
+    // landing is the same burst of noise pitched an octave lower, wider (less of a tone),
+    // muffled above 1.1 kHz, and much quieter: a soft tap, not a clack
     click(strength = 1, { delay = 0, soft = false } = {}) {
       const sr = ac.sampleRate, len = Math.floor(sr * 0.05), buf = ac.createBuffer(1, len, sr), d = buf.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = (R() * 2 - 1) * Math.exp(-i / (sr * 0.0035));
       const src = ac.createBufferSource(); src.buffer = buf;
-      const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = CLICK_HZ * (0.9 + R() * 0.2); bp.Q.value = 5;
-      const g = ac.createGain(); g.gain.value = 0.9 * strength * (soft ? 0.7 : 1);
-      src.connect(bp); bp.connect(g); g.connect(dry);
+      const bp = ac.createBiquadFilter(); bp.type = 'bandpass';
+      bp.frequency.value = CLICK_HZ * (soft ? 0.5 * (0.85 + R() * 0.3) : 0.9 + R() * 0.2); bp.Q.value = soft ? 2.5 : 5;
+      const g = ac.createGain(); g.gain.value = 0.9 * strength * (soft ? 0.4 : 1);
+      src.connect(bp);
+      if (soft) { const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1100; lp.Q.value = 0.5; bp.connect(lp); lp.connect(g); }
+      else bp.connect(g);
+      g.connect(dry);
       src.start(ac.currentTime + delay);
     },
     // a gentle bell at the end of each thirty-three

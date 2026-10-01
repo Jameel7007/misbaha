@@ -31,12 +31,13 @@ export const RULES = {
   borderStep: 0.15,      // … and a border at least this much lighter
   // under the lamp only (they describe the lit scene's hierarchy):
   chromaBelowBeads: 0.85,// ground chroma ≤ this × the least saturated of amber and olive: the beads lead
-  valueMargin: 0.04,     // *area* colours sit between ebony's typical tone and amber's lit faces, with this margin
+  valueMargin: 0.04,     // *area* colours keep this far from ebony's typical tone (either side) and below amber's lit faces
 };
 // Roles: 'area' colours are large surfaces a bead lies on or hangs in front of; they decide
 // figure against ground. 'accent' and 'line' colours are small or thin: they still obey the
 // hue, chroma and neighbour rules, but can't swallow a bead (and near-black ebony is always
-// close to a dark outline, which is harmless).
+// close to a dark outline, which is harmless). A 'carving' (the hand) is an object the strand
+// passes over and hangs in front of: it is checked against the beads' lit faces (rules.mjs).
 
 // ── materials, in daylight ──
 export const RUG = {
@@ -61,11 +62,12 @@ export const WALL = {
   grout:     { L: 0.20, C: 0.01,  h: 60,  role: 'line',   note: 'joints between tiles' },
 };
 
-// the hand: grey plaster, like a sculptor's cast, so it implies no particular skin tone. It
-// sits right under the lamp, so it's kept darker than it would be elsewhere (its lamp-facing
-// facets must not outshine the beads), and faintly cool so the warm lamp renders it neutral
-// rather than drifting toward the beads' amber
-export const HAND = { plaster: { L: 0.39, C: 0.02, h: 240, role: 'area', note: 'grey plaster: the hand holding the strand' } };
+// the hand: a dark, honed stone (a soapstone or basalt), like a carving, so it implies no
+// particular skin tone. Darker than ebony beads (clear of their tone, so an ebony bead on the
+// finger still reads), so the beads stay the brightest thing in the lamp. Black, as
+// basalt is, faintly cool so the warm lamp renders it a neutral black rather than a brown
+// that would drift toward the beads' amber
+export const HAND = { stone: { L: 0.14, C: 0.012, h: 240, role: 'carving', note: 'dark carved stone: the hand holding the strand' } };
 
 // colours that touch each other in the patterns (for the neighbour rule)
 export const NEIGHBOURS = [
@@ -111,4 +113,4 @@ const hexes = set => Object.fromEntries(Object.entries(set).map(([k, c]) => [k, 
 export const RUG_HEX = hexes(RUG);
 export const TILE_HEX = hexes(WALL);
 export const FLOOR_HEX = hexes(FLOOR).floor;
-export const HAND_HEX = hexes(HAND).plaster;
+export const HAND_HEX = hexes(HAND).stone;

@@ -79,15 +79,16 @@ async function boot(stage) {
   const persist = () => { saved.current = setKey; saved.progress[setKey] = { count, round }; dhikr.save(saved); };
   sim.pin = pinFor();
 
-  // landings on the rug: the strongest two per 40 ms, louder the faster they land
+  // landings on the rug: the strongest one per 70 ms, louder the faster it lands (a strand
+  // falling is a soft patter, not a burst of clicks)
   let lastLanding = 0;
   function playLandings(now) {
     if (!impacts.length) return;
-    if (now - lastLanding > 40) {
+    if (now - lastLanding > 70) {
       const hits = [];
       for (let j = 0; j < impacts.length; j += 2) hits.push([impacts[j], impacts[j + 1]]);
       hits.sort((a, b) => b[1] - a[1]);
-      for (const [i, speed] of hits.slice(0, 2)) click(0.15 + 0.6 * Math.max(0, Math.min(1, (speed - 1.5) / 20)) ** 0.7, { soft: true });
+      for (const [i, speed] of hits.slice(0, 1)) click(0.15 + 0.6 * Math.max(0, Math.min(1, (speed - 1.5) / 20)) ** 0.7, { soft: true });
       lastLanding = now;
     }
     impacts.length = 0;
@@ -269,7 +270,7 @@ async function boot(stage) {
   // in Hold the patch of rug the strand falls on
   const subjects = (() => {
     hand.update(1, -1); hand.group.updateMatrixWorld(true);
-    const b = new Box3().setFromObject(hand.group);
+    const b = new Box3().setFromObject(hand.body);   // the hand, not the arm reaching out of the picture
     b.expandByPoint(new Vector3(PEG.x - 0.2, PEG.y - 1.6, 0.2));
     const corners = box => [0, 1, 2, 3, 4, 5, 6, 7].map(i => new Vector3(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z));
     return { count: corners(b), hold: corners(new Box3(new Vector3(-1.3, 0, -1), new Vector3(1.3, 0.3, 1))) };

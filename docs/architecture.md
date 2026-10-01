@@ -669,6 +669,58 @@ lined up with the pictures by the time it started. The script plays a short visi
 title, Begin, the flute, counting through the thirty-third bead (the bell and the glow),
 Hold, a bead lifted and dropped, back to Count, a small turn of the view.
 
+## After Stage 9: a carved stone hand, Drop, and softer landings
+
+**The hand, carved.** The Stage 5 hand was low-poly grey plaster: separate faceted pieces
+that read as a blocky glove, mostly outside the lamp so it came out charcoal, and its
+forearm ended in mid-air. It is now one form carved from black stone (`hand.js`, meshed by
+`sdf-mesh.js`).
+- **One form from many pieces.** Each part (finger bones, curled fingers, the fist, palm,
+  wrist, the thumb's root) is a rounded cone or an ellipsoid described by a *signed
+  distance function*: for any point, how far it is from the surface. A *smooth minimum*
+  joins them with a fillet instead of a crease, as a carver leaves stone between finger
+  and palm; the fillets between the curled fingers are kept small, so they stay three
+  fingers with a groove between.
+- **From a distance function to triangles: surface nets.** Sample the function on a grid
+  (1.4 cm); every cell the surface passes through gets one vertex (where the surface
+  crosses its edges, then nudged onto the surface); every grid edge it crosses becomes a
+  square between the four cells around it. Normals come from the function's gradient, so
+  the shading is smooth.
+- **Fast enough to do at load.** The first version took a second. Two changes brought it
+  to about 0.2 s: sample a grid four times coarser first, and only evaluate exactly near
+  the surface (a distance field changes no faster than distance, so far from the surface
+  the coarse values already decide the sign); and skip any piece too far from a point to
+  change the result. Measured on the production build: ready to begin 0.65 s (0.45 s
+  before), and 2.8 s with the processor slowed sixfold (1.9 s before).
+- **The thumb still moves.** Its two bones are carved once each and moved rigidly by the
+  same two-bone IK; a ball at the knuckle hides the joint.
+- **The arm.** The forearm now hangs down and back from the raised hand to an elbow below
+  the picture, and the upper arm goes back into the dark behind the wall, meshed coarser
+  because it's out of the light. Its colour falls off with distance from the knuckles, so
+  it fades into the dark. Phones frame the hand, not the arm.
+- **The stone.** A cool black basalt (palette `HAND.stone`, L 0.14), so the warm lamp
+  renders it neutral rather than brown; a satin polish (roughness 0.4) so the knuckles
+  catch the lamp; and a faint grain that varies colour and polish, fixed to the hand so it
+  doesn't swim as the hand moves.
+- **A colour rule, restated honestly.** The rules said the hand must be lighter than ebony
+  beads and ΔE 0.1 from them. Lighter was never the point (clear of ebony's tone is), so
+  that rule now accepts either side. The ΔE rule can't be met by any dark polished stone
+  here: right under the lamp, a polished surface reflects about 4% of it, which puts a
+  floor of about L 0.21 on the finger whatever the stone's colour, near ebony's 0.27. So
+  the hand has its own role, *carving*: an object the strand passes over and hangs in
+  front of, not a ground beads lie on. It is checked against the beads' lit faces (how an
+  ebony bead actually reads against it: by its lit side and its shine), and must stay
+  darker than lit amber. Both colour checks pass.
+
+**Hold is now Drop.** Only the button's word and the help text changed; the code still
+calls the mode `hold`.
+
+**Softer landings on the rug.** A landing played the counting click at 70% volume, up to
+twice every 40 ms: a crisp clatter where wool would muffle it. Now a landing is the same
+burst an octave lower, wider (less of a tone), muffled above 1.1 kHz, at 40% of the old
+level, and at most one every 70 ms. Measured: a dropped strand is about 15 dB quieter
+(−49 LUFS against −34) and plays 7 landings instead of 21.
+
 ## Interview questions this answers
 
 - *Why position-based dynamics over a force-based spring model?* It stays stable under
@@ -716,6 +768,13 @@ Hold, a bead lifted and dropped, back to Count, a small turn of the view.
 - *How do you find a measurement bug?* Here, excluding a new object from the bead mask
   changed the bead colours sharply, which revealed that an older object (the peg) had
   been counted as beads all along.
+- *What is a signed distance function, and how do you mesh one?* A function giving each
+  point's distance to a surface (negative inside). Pieces combine with min (union) or a
+  smooth min (a fillet). Surface nets or marching cubes sample it on a grid and place
+  triangles where the sign changes.
+- *When should a design rule bend?* When the reason behind it can be met another way, or
+  physics makes it unreachable: restate the rule around its purpose and write down why,
+  rather than tuning numbers until a check passes.
 - *How do you record a WebGL page with its sound?* Take the browser's own screencast
   frames with their times, hold each until the next (constant-frame-rate video that keeps
   real time), and tap the Web Audio graph into a `MediaRecorder`, aligned by start time.

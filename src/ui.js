@@ -360,7 +360,7 @@ export function loadFonts() {
   const faces = [
     document.fonts.load('italic 400 1em Amiri', 'Misbaḥa Subḥāna-llāh'),
     document.fonts.load('400 1em Amiri', 'سُبْحَانَ ٱللَّٰهِ ٠١٢٣٤٥٦٧٨٩ 0123456789'),
-    document.fonts.load('500 1em "Instrument Sans Variable"', 'Count Hold Begin'),
+    document.fonts.load('500 1em "Instrument Sans Variable"', 'Count Drop Begin'),
   ];
   const timeout = new Promise(r => setTimeout(r, 3000));
   return Promise.race([Promise.all(faces).then(() => document.fonts.ready), timeout])
