@@ -12,7 +12,9 @@
     "check:palette": "node scripts/check-palette.mjs",
     "verify:colour": "node scripts/verify-colour.mjs",
     "calibrate:colour": "node scripts/calibrate-colour.mjs",
-    "find:phrases": "node scripts/find-phrases.mjs"
+    "find:phrases": "node scripts/find-phrases.mjs",
+    "make:share": "node scripts/make-share.mjs",
+    "record": "node scripts/record-capture.mjs"
   },
   "dependencies": {
     "@fontsource-variable/instrument-sans": "^5.3.0",

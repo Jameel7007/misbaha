@@ -29,7 +29,7 @@ function guess(renderer) {
 }
 
 export function createQuality({ renderer, lamp, onChange = () => {} }) {
-  let level = -1, times = [], fastRuns = 0, ceiling = 0, settleUntil = 0;
+  let level = -1, times = [], fastRuns = 0, ceiling = 0, settleUntil = 0, pinned = false;
   const cap = () => Math.min(window.devicePixelRatio || 1, 2);
   function apply(next, now = performance.now()) {
     next = Math.max(ceiling, Math.min(LEVELS.length - 1, next));
@@ -53,7 +53,7 @@ export function createQuality({ renderer, lamp, onChange = () => {} }) {
     // called once per frame with the time since the last frame, in ms
     frame(ms, now) {
       // a hidden tab, a hitch or a throttled preview says nothing about rendering cost
-      if (document.hidden || ms > 100 || now < settleUntil) return;
+      if (pinned || document.hidden || ms > 100 || now < settleUntil) return;
       times.push(ms);
       if (times.length < WINDOW) return;
       times.sort((a, b) => a - b);
@@ -67,8 +67,8 @@ export function createQuality({ renderer, lamp, onChange = () => {} }) {
         if (++fastRuns >= UP_AFTER) { apply(level - 1, now); fastRuns = -1; }   // -1: on probation at the new level
       } else if (fastRuns === -1) fastRuns = 0;   // the new level held: probation over
     },
-    // dev: pin a level
-    set(l) { ceiling = 0; apply(l); },
+    // dev: pin a level (the governor stops), or unpin with null
+    set(l) { pinned = l !== null; ceiling = 0; if (pinned) apply(l); },
     // the pixel ratio follows the device (a window moved to another screen)
     refresh() { renderer.setPixelRatio(Math.min(cap(), LEVELS[level].ratio)); },
   };

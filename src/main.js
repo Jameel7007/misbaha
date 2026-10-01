@@ -1,6 +1,7 @@
 // Boot, the counting / mode controller, and the frame loop.
 import { bell, chime, click, setAmbience, setSoundEnabled, unlockAudio } from './audio.js';
 import * as dhikr from './dhikr.js';
+import { createCursor } from './cursor.js';
 import { createDust } from './dust.js';
 import { createHand } from './hand.js';
 import { attachInput } from './input.js';
@@ -147,19 +148,30 @@ async function boot(stage) {
     }
     if (rehang) {
       rehang.t += dt;
-      const tA = still() ? 0.25 : 1.1, top = pinTop(sim.pin);   // reduced motion: a quick lift, no glide
+      const tA = still() ? 0.25 : MODE_SECONDS, top = pinTop(sim.pin);   // reduced motion: a quick lift, no glide
       if (rehang.t < tA) {
         const e = easeInOut(rehang.t / tA);
         sim.pinTo = rehang.from.map((v, c) => v + (top[c] - v) * e);
-      } else { sim.pinTo = top; sim.pegGoal = PEG_FRONT; }
+      } else { sim.pinTo = top; if (sim.pegGoal !== PEG_FRONT) movePeg(PEG_FRONT, still() ? 0 : 0.4); }
       sim.bias = rehang.t > tA - 0.35 && rehang.t < tA + 0.8 ? 14 : 0;
       if (rehang.t > tA + 1.3) { rehang = null; sim.bias = 0; if (queued > 0) { queued--; startAdvance(false); } }
     }
-    const sp = 6 * dt;
-    sim.pegEnd += clamp(sim.pegGoal - sim.pegEnd, -sp, sp);
+    if (pegMove) {
+      pegMove.t = Math.min(1, pegMove.t + dt / pegMove.dur);
+      sim.pegEnd = pegMove.from + (sim.pegGoal - pegMove.from) * easeInOut(pegMove.t);
+      if (pegMove.t >= 1) pegMove = null;
+    }
+  }
+  // the finger slides in or out on the same eased curve as the camera (dur 0: at once)
+  let pegMove = null;
+  function movePeg(to, dur) {
+    sim.pegGoal = to;
+    if (dur <= 0) { sim.pegEnd = to; pegMove = null; return; }
+    pegMove = { from: sim.pegEnd, t: 0, dur };
   }
 
   // ── modes ──
+  const MODE_SECONDS = 1;   // Count ⇄ Hold: camera, hand and strand move together over this
   function setMode(m) {
     if (m === mode) return;
     mode = m;
@@ -170,14 +182,16 @@ async function boot(stage) {
       adv = null;
       rehang = null; sim.bias = 0;
       dropPin();
-      sim.pegGoal = PEG_BACK;
+      movePeg(PEG_BACK, still() ? 0 : MODE_SECONDS);   // the hand draws back as the strand falls
     } else {
       releaseGrab();
       holdPin();
-      sim.pegGoal = PEG_BACK;
+      movePeg(PEG_BACK, 0);
       rehang = { t: 0, from: sim.pinFrom.slice() };
     }
+    // the camera moves on the same one-second eased curve (none with reduced motion)
     rig.preset(mode);
+    if (!still()) rig.ease(MODE_SECONDS);
     input.setCursor();
   }
   // lay the strand out afresh at the current count (Reset, or choosing another set)
@@ -185,7 +199,7 @@ async function boot(stage) {
     adv = null; queued = 0; rehang = null; sim.bias = 0; releaseGrab();
     sim.pin = pinFor();
     layoutHang(); settle(150);
-    if (mode === 'hold') { dropPin(); sim.pegGoal = PEG_BACK; }
+    if (mode === 'hold') { dropPin(); movePeg(PEG_BACK, 0); }
     showCount();
   }
   function reset() { count = 0; round = 1; persist(); rehangAtCount(); }
@@ -243,6 +257,7 @@ async function boot(stage) {
     onReset: reset,
     onRoomTone: on => setAmbience(on),   // off by default, and not remembered
   });
+  createCursor(ui.canvas);
   const input = attachInput({
     canvas: ui.canvas, camera, rig,
     getMode: () => mode,
@@ -260,6 +275,8 @@ async function boot(stage) {
     return { count: corners(b), hold: corners(new Box3(new Vector3(-1.3, 0, -1), new Vector3(1.3, 0.3, 1))) };
   })();
   const frameRegion = () => rig.setFrame(ui.freeRegion(), subjects, window.innerWidth, window.innerHeight);
+  // dev: frame the strand into any region of the screen (scripts/make-share.mjs uses it)
+  if (import.meta.env.DEV) window.__stage.frameTo = region => { rig.setFrame(region, subjects, window.innerWidth, window.innerHeight); rig.preset(mode); rig.snap(); };
   function resize() {
     const w = window.innerWidth, h = window.innerHeight;
     quality.refresh();

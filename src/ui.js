@@ -177,7 +177,8 @@ export function bindControls({ onMode, onNext, onSound, onReset, onRoomTone }) {
   // A mouse or touch click leaves focus on the button, which would swallow Space.
   // Hand focus back to the beads; keyboard clicks (detail 0) keep it for Tab navigation.
   $('rail').addEventListener('click', e => {
-    if (e.detail > 0 && e.target.closest('button') && e.target.closest('button') !== $('more')) canvas.focus({ preventScroll: true });
+    const b = e.target.closest('button');
+    if (e.detail > 0 && b && b !== $('more') && b !== $('creditsOpen')) canvas.focus({ preventScroll: true });
   });
   // Escape on a control hands the keys back to the beads (Space passes a bead again)
   $('rail').addEventListener('keydown', e => {
@@ -272,6 +273,13 @@ export function bindPanel({ getSets, getCustom, onPick, onCustom }) {
     else if (!e.shiftKey && document.activeElement === f.at(-1)) { e.preventDefault(); f[0].focus(); }
   });
   $('aboutOpen').addEventListener('click', () => { view(true); $('aboutBack').focus({ preventScroll: true }); $('panelAbout').scrollTop = 0; });
+  // the credits line under the controls opens About at the credits
+  $('creditsOpen').addEventListener('click', () => {
+    sheet(false); open(); view(true);
+    $('aboutBack').focus({ preventScroll: true });
+    const credits = $('panelAbout').querySelector('.credits');
+    $('panelAbout').scrollTop = credits.offsetTop - $('panelAbout').offsetTop - 40;
+  });
   $('aboutBack').addEventListener('click', () => { view(false); $('aboutOpen').focus({ preventScroll: true }); });
   $('customForm').addEventListener('submit', e => {
     e.preventDefault();

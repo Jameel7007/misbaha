@@ -40,12 +40,13 @@ export function attachInput({ canvas, camera, rig, getMode, onPass, onUnlock }) 
     if (sim.grab >= 0) {
       setRay(e);
       if (ray.ray.intersectPlane(plane, hitP)) moveGrab(hitP.x, hitP.y, hitP.z);
-    } else if (drag.moved) rig.orbit(dx, dy);
+    } else if (drag.moved) { rig.orbit(dx, dy); if (canvas.dataset.cursor !== 'turning') setCursor('turning'); }
   });
   const endDrag = e => {
     if (!drag) return;
     if (sim.grab >= 0) { releaseGrab(); setCursor(''); }
     else if (!drag.moved && getMode() === 'count' && e.type === 'pointerup') onPass();
+    else if (drag.moved) setCursor('');
     drag = null;
   };
   canvas.addEventListener('pointerup', endDrag);

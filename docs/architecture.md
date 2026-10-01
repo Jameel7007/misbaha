@@ -624,6 +624,51 @@ effect at once):
 **One behaviour fixed on the way:** a tap made while the strand was lifting back onto
 the finger after Hold was dropped. It is now queued like any other.
 
+## Stage 9: polish
+
+**A custom cursor** (`cursor.js`), for a mouse or trackpad only (`(hover: hover) and
+(pointer: fine)`): a thin ring with a word for what a click will do. *Pass* in Count;
+*Drag* over a bead in Hold, the ring smaller and filled while one is held; *Turn* while
+dragging the view; a small ring otherwise. It reads the state `input.js` already kept on
+the canvas (`data-cursor`) through a `MutationObserver`, so the input code didn't change
+shape. Over the controls and text the ordinary cursor returns. It trails the pointer very
+slightly (closing 45% of the gap each frame); with reduced motion it sits exactly on it.
+
+**Count ⇄ Hold in one second, together.** Before, the camera drifted toward its new
+place (an exponential ease, still moving after 1.5 s) while the finger slid at a constant
+speed in a fifth of a second. Now both follow the same eased curve (slow, fast, slow)
+over one second: to Hold the hand draws back as the strand falls and the camera rises
+over the rug; to Count the camera and the lift of the strand take one second, then the
+finger slides back in under the bead (0.4 s). Measured: camera and finger arrive within
+the same 100 ms sample. With reduced motion both are instant.
+
+**Share image, icon, title, credits.**
+- The page title says what it is ("Misbaḥa · prayer beads for dhikr"), with a description.
+- Link previews (Open Graph and Twitter tags) point at the GitHub Pages address,
+  `https://jameel7007.github.io/misbaha/`; preview sites need the full address, so they
+  start working once the site is published there.
+- `npm run make:share` renders the preview image from the real scene: the strand framed
+  into the right of the picture (the Stage 8 view offset), the title set in the page's own
+  type on the left, rendered at twice the size and scaled down. It also draws the
+  home-screen icon (the favicon's amber bead).
+- A credits line at the foot of the controls ("Made by Muhammad Jameel", and *About &
+  credits*, which opens About at the credits). About now credits the type too (Amiri,
+  Instrument Sans; SIL Open Font License).
+
+**Browsers.** A smoke test runs the production build in Chrome, WebKit (Safari's engine),
+Firefox and WebKit as an iPhone 15: load, Begin, ten counts, Hold and back, the flute, the
+set panel; no errors in any, and the screenshots match. Headless WebKit caps animation at
+about 30 fps even on a blank page, so its frame rate there says nothing about Safari.
+Real Safari on a Mac and on an iPhone still needs a person.
+
+**The screen capture** (`npm run record`, 28 s, 1920 × 1080, 60 fps, with sound). Chrome's
+screencast sends a picture each time the page repaints, with its time; ffmpeg holds each
+picture until the next, so the video keeps real time. For the sound, every connection to
+the speakers is also routed into a `MediaRecorder` inside the page, and the recording is
+lined up with the pictures by the time it started. The script plays a short visit: the
+title, Begin, the flute, counting through the thirty-third bead (the bell and the glow),
+Hold, a bead lifted and dropped, back to Count, a small turn of the view.
+
 ## Interview questions this answers
 
 - *Why position-based dynamics over a force-based spring model?* It stays stable under
@@ -671,6 +716,11 @@ the finger after Hold was dropped. It is now queued like any other.
 - *How do you find a measurement bug?* Here, excluding a new object from the bead mask
   changed the bead colours sharply, which revealed that an older object (the peg) had
   been counted as beads all along.
+- *How do you record a WebGL page with its sound?* Take the browser's own screencast
+  frames with their times, hold each until the next (constant-frame-rate video that keeps
+  real time), and tap the Web Audio graph into a `MediaRecorder`, aligned by start time.
+- *Why synchronise two animations on one easing curve?* Things that move together read
+  as one gesture; different curves or speeds read as separate, mechanical steps.
 - *How do you keep a 3D page smooth on weak devices?* Find the costs that scale (pixels,
   shadow resolution), guess a starting level from the device, then watch the frame times
   and step down or up with hysteresis so it can't oscillate.

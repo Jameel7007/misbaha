@@ -238,12 +238,15 @@ export function createRig(camera) {
     snap() { Object.assign(cam, goal); glide = null; },
     // a scripted move from another preset to the goal: eased in and out, so no overshoot
     glide(from, seconds) { glide = { from: params(from), t: 0, dur: seconds }; Object.assign(cam, glide.from); },
+    // the same eased move, from wherever the camera is now (the change between modes)
+    ease(seconds) { glide = { from: Object.assign({}, cam), t: 0, dur: seconds }; },
     orbit(dx, dy) {
       goal.az -= dx * 0.005;
       goal.el = clamp(goal.el + dy * 0.004, -0.15, 1.4);
     },
     zoom(deltaY) { goal.dist = clamp(goal.dist * Math.exp(deltaY * 0.001), 1.6, 14); },
     update(dt) {
+      if (glide && this.instant) glide = null;
       if (glide) {
         glide.t += dt;
         const e = easeInOutCubic(Math.min(1, glide.t / glide.dur));
