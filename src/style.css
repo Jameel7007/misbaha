@@ -106,6 +106,9 @@ body.loaded .intro { cursor: pointer; }
 .about .lede { font: italic 400 19px/1.5 var(--serif); color: var(--ink); margin: 4px 0 6px; }
 .about h3 { font: 500 10.5px/1 var(--ui); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin: 22px 0 8px; }
 .about p { margin: 0 0 10px; }
+.about .credits { font-size: .86em; color: var(--muted); }
+.about .credits a { color: inherit; text-underline-offset: 2px; text-decoration-color: var(--line-strong); }
+.about .credits a:hover { color: var(--ink); }
 .about ul { margin: 0; padding-left: 18px; }
 .about li { margin: 4px 0; }
 .about kbd { font: 500 11px/1 var(--ui); padding: 2px 6px; border: 1px solid var(--line-strong); border-radius: 3px; }

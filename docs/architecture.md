@@ -426,6 +426,9 @@ The Hold round trip works, and so does the palette.
 
 ## Stage 6: sound
 
+*(The synthesised bead clicks below were replaced by real recordings after Stage 7; see
+"Real recordings" below. The rest of this section still holds.)*
+
 **No recordings, so modal synthesis.** The spec asks for recorded clicks; none were
 available, and fetching sound files from the web needs the owner's permission. Instead
 each click is synthesised the way physical-modelling synthesisers do it (`audio.js`):
@@ -507,6 +510,52 @@ never passes a bead (tested).
   units (`dvh`), and the scrolling body has `min-height: 0`, which lets a flex child
   shrink and scroll.
 
+## Real recordings (after Stage 7)
+
+**Why.** The synthesised clicks sounded electronic: a few pure decaying sines can't
+carry the messy detail of a real bead hitting a real bead. With the owner's go-ahead,
+six Creative Commons recordings were downloaded from Freesound (`audio-src/`, credits in
+`audio-src/SOURCES.md` and in About).
+
+**Cutting single clicks out of a recording** (`scripts/build-clicks.mjs`, with
+`scripts/lib/clicks.mjs`). `ffmpeg` decodes each file to raw samples. A click is found
+where the loudness (the peak in each millisecond) jumps at least 12 dB above the 10 ms
+before it. Each one is measured: how much quieter the 30 ms before it was (isolation),
+whether another click follows within 50 ms (crowded), and how bright it is (spectral
+centroid). Only clean ones are kept (isolation over 15 dB, not crowded); from the
+cleanest, a set spread across brightness is chosen, so the set doesn't all sound alike.
+Each is cut from 2 ms before the hit to 120 ms, with a 30 ms fade, rumble below 80 Hz
+removed, and levelled on its first 30 ms so every material plays equally loud.
+
+Two of the six recordings had no usable single clicks (one is a continuous rattle, one
+shaken bursts), which the measurements showed before any listening. In the end: amber
+plays 10 clicks from a rosary, olive 10 from a wooden bracelet, ebony 7 from two
+abacuses.
+
+**Getting them into the page.** The clicks are stored as 16-bit samples at 32 kHz in a
+generated module, `src/clicks.data.js` (about 270 kB as text). `audio.js` imports it
+dynamically, so it loads alongside the scene without delaying the first frame, and turns
+it into audio buffers directly, with no decoding step. Sound starts once both the
+recordings and the Begin press are there.
+
+**What stays synthesised, and why.** The brass separators: a real hard click for the
+contact plus a short ring of decaying modes; metal rings in clean modes, so synthesis
+works there. The bells at 33 and 100 were pure sine tones; they are now struck bowls,
+with partials at the uneven ratios of a real bowl (1 : 2.71 : 5.08 : 8.2), each a close
+pair that beats slowly, the higher ones dying sooner.
+
+**Landings.** The rug's low-pass filter moved from 1.4 kHz to 3 kHz (with more gain):
+real clicks have their energy at 5–9 kHz, so at 1.4 kHz a dropped strand was nearly
+silent.
+
+**Anti-repetition** is as before, except no recording repeats either of the last two
+played from its bank.
+
+**How it was checked.** The same offline renders as Stage 6: consecutive clicks have a
+median similarity of 0.12–0.23 (identical copies would be 1.0), nothing clips; the live
+site's counts are unchanged (10 slow taps play 20 clicks, a Hold drop 20 landings), and
+99 taps at 50 ms still all arrive in order.
+
 ## Interview questions this answers
 
 - *Why position-based dynamics over a force-based spring model?* It stays stable under
@@ -554,6 +603,12 @@ never passes a bead (tested).
 - *How do you find a measurement bug?* Here, excluding a new object from the bead mask
   changed the bead colours sharply, which revealed that an older object (the peg) had
   been counted as beads all along.
+- *Why are real recordings better than synthesis for small impacts?* A real click is
+  full of detail synthesis leaves out: irregular contact, many modes, the room. Synthesis
+  is still right for things with clean modes, like a metal ring.
+- *How do you find events in a recording automatically?* Onset detection: follow the
+  short-term envelope and mark where it rises sharply above what came just before; then
+  measure each event (isolation, overlap, brightness) and keep the clean ones.
 - *What is modal synthesis?* Model a struck object as a few resonant modes, damped sines
   with their own frequency, decay and loudness, excited by a short contact. Changing the
   modes changes the material.
