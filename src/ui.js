@@ -148,7 +148,7 @@ export function showMode(m) {
   $('hint').textContent = HINTS[m];
 }
 
-// Sound and Ambience are one-word toggles: filled while on, with the state in aria-pressed
+// Sound and Flute are one-word toggles: filled while on, with the state in aria-pressed
 export function showSound(on) { $('sound').setAttribute('aria-pressed', String(on)); }
 
 export function bindControls({ onMode, onNext, onSound, onReset, onRoomTone }) {

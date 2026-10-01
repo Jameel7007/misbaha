@@ -524,7 +524,7 @@ centre moved ±10% each time. The noise is fresh on every click, so no two are t
 The separators, the landing tick (0.45, 50 ms after) and landings on the rug use it too.
 The bowl bells at 33 and 100 stay.
 
-**The ambience: the ney.** The ney is the end-blown reed flute at the heart of Sufi
+**The ambience: the ney** (the button says *Flute*). The ney is the end-blown reed flute at the heart of Sufi
 music. Four Freesound recordings are in `src/ney/` (credits in `src/ney/SOURCES.md` and
 in About). `scripts/find-phrases.mjs` finds the phrases in each:
 - the loudness is measured every 50 ms;
