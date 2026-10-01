@@ -424,6 +424,49 @@ The Hold round trip works, and so does the palette.
   because of that wrong number; with the corrected one they return closer to their
   natural glaze values.
 
+## Stage 6: sound
+
+**No recordings, so modal synthesis.** The spec asks for recorded clicks; none were
+available, and fetching sound files from the web needs the owner's permission. Instead
+each click is synthesised the way physical-modelling synthesisers do it (`audio.js`):
+- an impact excites a few resonant modes of the bead, each a sine that rings and decays
+  at its own rate, plus a fraction of a millisecond of contact noise;
+- the attack lasts as long as the contact, so harder materials are sharper;
+- each material has its own modes: amber a hard bright tick (about 3.2 kHz), olive a
+  duller knock (1.5 kHz), ebony a dense clack (2.3 kHz), and brass separators that ring
+  longer.
+
+Eight variants per material are rendered once into a bank, so playback costs nothing.
+Real recordings could replace a bank later.
+
+**Against machine-gun repetition:**
+- never the same variant twice in a row;
+- a fixed pitch per bead, from its size (smaller is higher), plus a ±2% random spread;
+- varied loudness and up to 4 ms of timing play;
+- some variants carry a second, softer tick: the bead knocking its neighbour;
+- hurried counting plays lighter (beyond about 8 clicks in half a second);
+- each pass is a pull click and a softer landing tick, but the landing tick is skipped
+  while taps are waiting, so a fast run doesn't double up;
+- a short synthetic room reverb puts the clicks in a space, and a gentle compressor keeps
+  overlapping clicks from clipping.
+
+**Landings on the rug.** The physics records any body that reaches the floor faster than
+1.5 units/s (`impacts` in `physics.js`, plain data; it knows nothing about sound).
+`main.js` plays the strongest two every 40 ms through a low-pass filter (wool muffles
+them), louder the faster they land. A dropped strand gives about 19 soft clicks instead
+of hundreds.
+
+**Ambience.** A quiet room tone (low brown noise, looped seamlessly), off by default, on
+the Ambience button. Sound and Ambience are one-word toggles, filled while on.
+
+**How it was checked.** Each scenario was rendered offline through the same engine, with
+`OfflineAudioContext`. Consecutive clicks were compared by normalised cross-correlation
+(identical copies would score 1.0): median 0.22–0.49, never above 0.73. Nothing clips.
+In the live site, counting, fast counting, a Hold drop and the Ambience toggle were
+driven through real input and the clicks counted: 10 unhurried taps play 20 clicks
+(pull and landing); 20 fast taps play 21. The final judgement is by ear, so the renders
+were kept as a listening file.
+
 ## Interview questions this answers
 
 - *Why position-based dynamics over a force-based spring model?* It stays stable under
@@ -471,6 +514,15 @@ The Hold round trip works, and so does the palette.
 - *How do you find a measurement bug?* Here, excluding a new object from the bead mask
   changed the bead colours sharply, which revealed that an older object (the peg) had
   been counted as beads all along.
+- *What is modal synthesis?* Model a struck object as a few resonant modes, damped sines
+  with their own frequency, decay and loudness, excited by a short contact. Changing the
+  modes changes the material.
+- *How do you avoid repetitive UI sounds?* Round-robin variants, per-object pitch, small
+  random spreads, density-aware loudness, and merging events that happen too close
+  together.
+- *How do you test audio you can't hear?* Render it offline with `OfflineAudioContext`,
+  measure it (peaks, similarity between events), count what the live code triggers, and
+  keep renders for a person to listen to.
 - *How are Islamic star patterns constructed?* One classical way is Hankin's method:
   rays from each edge midpoint of a polygon tiling at a contact angle, stopped where
   they meet. Changing the angle changes the whole character of the pattern.

@@ -10,9 +10,9 @@ import { CA, CB, KIND, N, NL, RNG_SEED, SIZE, SPIN, TONE, X, rng } from './physi
 // glow: strength of the inner glow (amber only; wood is opaque);
 // cloudy: a share of beads that are opaque "butterscotch" amber, and their colour
 export const VARIETIES = {
-  amber: { name: 'Amber', a: '#a4500c', b: '#f0a53a', css: 'radial-gradient(circle at 40% 35%, #f6bb55, #a4500c 72%)', rough: 0.2, clear: 1, clearRough: 0.1, map: 'inclusions', glow: 1, cloudy: { share: 0.12, colour: '#e3a646' }, silk: '#1d4a3a', clack: 2700 },
-  olive: { name: 'Olive', a: '#80552f', b: '#c79a62', css: 'radial-gradient(circle at 40% 35%, #d2a877, #7a512c 75%)', rough: 0.46, clear: 0.35, clearRough: 0.2, map: 'grain', glow: 0, silk: '#6e1d25', clack: 1500 },
-  ebony: { name: 'Ebony', a: '#1a130f', b: '#443022', css: 'radial-gradient(circle at 40% 35%, #4a372b, #120c09 75%)', rough: 0.26, clear: 0.9, clearRough: 0.12, map: 'grain', glow: 0, silk: '#b58f42', clack: 2000 },
+  amber: { name: 'Amber', a: '#a4500c', b: '#f0a53a', css: 'radial-gradient(circle at 40% 35%, #f6bb55, #a4500c 72%)', rough: 0.2, clear: 1, clearRough: 0.1, map: 'inclusions', glow: 1, cloudy: { share: 0.12, colour: '#e3a646' }, silk: '#1d4a3a' },
+  olive: { name: 'Olive', a: '#80552f', b: '#c79a62', css: 'radial-gradient(circle at 40% 35%, #d2a877, #7a512c 75%)', rough: 0.46, clear: 0.35, clearRough: 0.2, map: 'grain', glow: 0, silk: '#6e1d25' },
+  ebony: { name: 'Ebony', a: '#1a130f', b: '#443022', css: 'radial-gradient(circle at 40% 35%, #4a372b, #120c09 75%)', rough: 0.26, clear: 0.9, clearRough: 0.12, map: 'grain', glow: 0, silk: '#b58f42' },
 };
 
 // Amber as a solid, polished resin with a fake inner glow. Real see-through amber

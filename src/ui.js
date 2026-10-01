@@ -151,12 +151,15 @@ export function showMode(m) {
   $('hint').textContent = HINTS[m];
 }
 
-export function showSound(on) {
-  $('sound').setAttribute('aria-pressed', String(on));
-  $('sound').textContent = on ? 'Sound on' : 'Sound off';
-}
+// Sound and Ambience are one-word toggles: filled while on, with the state in aria-pressed
+export function showSound(on) { $('sound').setAttribute('aria-pressed', String(on)); }
 
-export function bindControls({ onMode, onNext, onSound, onReset }) {
+export function bindControls({ onMode, onNext, onSound, onReset, onRoomTone }) {
+  $('ambience').addEventListener('click', () => {
+    const on = $('ambience').getAttribute('aria-pressed') !== 'true';
+    $('ambience').setAttribute('aria-pressed', String(on));
+    onRoomTone(on);
+  });
   $('modeCount').addEventListener('click', () => onMode('count'));
   $('modeHold').addEventListener('click', () => onMode('hold'));
   $('next').addEventListener('click', onNext);

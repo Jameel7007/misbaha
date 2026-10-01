@@ -153,7 +153,9 @@ body.ready .vignette { opacity: 1; }
 .swatch .dot { width: 24px; height: 24px; border-radius: 50%; background: var(--c);
   box-shadow: inset -3px -4px 6px rgba(0,0,0,.45), inset 3px 3px 5px rgba(255,255,255,.28); }
 .swatch[aria-checked="true"] { border-color: var(--line-strong); color: var(--ink); }
-.row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.row .btn { padding-inline: 4px; }
+#sound[aria-pressed="true"], #ambience[aria-pressed="true"] { background: var(--ink); color: var(--night); border-color: var(--ink); }
 .btn { border: 1px solid var(--line-strong); background: none; padding: 9px 10px; min-height: 38px; cursor: pointer; }
 .btn:hover { border-color: var(--ink); }
 .btn.primary { background: var(--amber); border-color: var(--amber); color: var(--on-amber); font-weight: 500; width: 100%; }

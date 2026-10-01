@@ -66,6 +66,10 @@ const PAIRS = new Int32Array(pairList);
 // pin: the loop body sitting on the peg; held: whether it is pinned there.
 // grab: body dragged by the pointer in Hold mode. *From/*To are interpolated across substeps.
 // bias: sideways push used while re-hanging so the loop falls to both sides of the peg.
+// landings on the floor since the last drain, as [body, downward speed, …]
+export const impacts = [];
+const IMPACT_MIN = 1.5;   // units per second: slower settling isn't heard
+
 export const sim = {
   pin: 0, held: true, pinFrom: [0, 0, 0], pinTo: [0, 0, 0],
   grab: -1, grabFrom: [0, 0, 0], grabTo: [0, 0, 0],
@@ -143,6 +147,10 @@ export function step(dt) {
         }
       }
       if (X[k + 1] < r) {
+        // a landing: the body was above the floor at the start of this substep and is coming
+        // down fast enough to be heard (main.js drains these for sound)
+        const down = (P0[k + 1] - X[k + 1]) / h;
+        if (P0[k + 1] >= r - 1e-4 && down > IMPACT_MIN && impacts.length < 128) impacts.push(i, down);
         X[k + 1] = r;
         X[k] -= (X[k] - P0[k]) * FRIC; X[k + 2] -= (X[k + 2] - P0[k + 2]) * FRIC;
       }

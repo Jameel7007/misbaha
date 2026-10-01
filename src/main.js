@@ -1,10 +1,10 @@
 // Boot, the counting / mode controller, and the frame loop.
-import { bell, chime, clack, setSoundEnabled, setVoice, unlockAudio } from './audio.js';
+import { bell, chime, click, setMaterial, setRoomTone, setSoundEnabled, unlockAudio } from './audio.js';
 import { createDust } from './dust.js';
 import { createHand } from './hand.js';
 import { attachInput } from './input.js';
 import {
-  KIND, NL, PEG, PEG_BACK, PEG_FRONT, PEG_R, RAD, X, beadNo, clamp, dropPin, holdPin,
+  KIND, NL, PEG, PEG_BACK, PEG_FRONT, PEG_R, RAD, SIZE, TONE, X, beadNo, clamp, dropPin, holdPin, impacts,
   layoutHang, passPin, pinTop, releaseGrab, settle, sim, step,
 } from './physics.js';
 import { addRoom, createRig, createStage } from './scene.js';
@@ -61,6 +61,26 @@ async function boot(stage) {
   let glowTarget = 0, glowLevel = 0;
   const pulse = strength => { glowTarget = Math.max(glowTarget, strength); };
   const showCount = () => ui.showCount(beadNo(sim.pin), completed, round);
+
+  // ── sound for each body: a bead's pitch follows its size (smaller is higher) with a little
+  // of its own character; separators are brass; the imām, the largest, sounds lower
+  const voice = i => KIND[i] === 1 ? { model: 'brass' }
+    : KIND[i] === 2 ? { pitch: 0.78 }
+    : KIND[i] === 3 ? { pitch: 1.3 }
+    : { pitch: Math.pow(0.05 / SIZE[i], 0.8) * (1 + (TONE[i] - 0.5) * 0.03) };
+  // landings on the rug: the strongest two per 40 ms, louder the faster they land
+  let lastLanding = 0;
+  function playLandings(now) {
+    if (!impacts.length) return;
+    if (now - lastLanding > 40) {
+      const hits = [];
+      for (let j = 0; j < impacts.length; j += 2) hits.push([impacts[j], impacts[j + 1]]);
+      hits.sort((a, b) => b[1] - a[1]);
+      for (const [i, speed] of hits.slice(0, 2)) click(0.15 + 0.6 * Math.max(0, Math.min(1, (speed - 1.5) / 20)) ** 0.7, { ...voice(i), soft: true });
+      lastLanding = now;
+    }
+    impacts.length = 0;
+  }
   // drag: hanging on the finger the strand settles like a real one (friction between beads,
   // the thread dragging over the finger); dropped on the rug it falls freely
   const DRAG = { count: 11, hold: 0.4 };
@@ -80,12 +100,14 @@ async function boot(stage) {
     // the fastest the thread constraints follow cleanly) so the strand catches up
     const dur = queued > 0 || auto ? clamp(0.1 - 0.008 * queued, 0.05, 0.1) : 0.17;
     adv = { t: 0, dur, a0, a1: a0 + da, r0: Math.hypot(dx, dy), r1: PEG_R + RAD[sim.pin] + 0.001, z0: X[k + 2] };
-    if (!auto) { clack(1); try { navigator.vibrate && navigator.vibrate(6); } catch (e) {} }
+    if (!auto) { click(1, voice(sim.pin)); try { navigator.vibrate && navigator.vibrate(6); } catch (e) {} }
   }
   function arrive() {
     const { pin } = sim;
-    if (KIND[pin] === 1) { clack(0.6); startAdvance(true); return; }   // separators pass on their own
-    clack(0.45, 0.05);
+    if (KIND[pin] === 1) { click(0.6, voice(pin)); startAdvance(true); return; }   // separators pass on their own
+    // the bead settling onto the finger: a softer tick, skipped while taps are waiting so a
+    // fast run doesn't double up
+    if (queued === 0) click(0.45, { ...voice(pin), delay: 0.03 });
     if (pin === 0) {
       // the hundredth: clear any taps still waiting, rest on the tahlīl, then a new round
       completed = true; resting = true; queued = 0;
@@ -156,7 +178,7 @@ async function boot(stage) {
   function setVariety(key) {
     store.set('variety', key);
     strand.setVariety(key);
-    setVoice(VARIETIES[key].clack);
+    setMaterial(key);
     ui.showVariety(key);
   }
   let soundOn = true;   // every visit starts with sound; the Sound button turns it off for this visit
@@ -170,9 +192,10 @@ async function boot(stage) {
       soundOn = !soundOn;
       setSoundEnabled(soundOn);
       ui.showSound(soundOn);
-      if (soundOn) clack(0.6);
+      if (soundOn) click(0.6);
     },
     onReset: reset,
+    onRoomTone: on => setRoomTone(on),   // off by default, and not remembered
   });
   const input = attachInput({
     canvas: ui.canvas, camera, rig,
@@ -230,6 +253,7 @@ async function boot(stage) {
     let n = 0;
     while (acc >= 1 / 60 && n < 4) { animate(1 / 60); step(1 / 60); acc -= 1 / 60; n++; }
     if (n === 4) acc = 0;
+    playLandings(now);
     if (lampUp) {
       lampUp.t += dt;
       const e = easeInOut(clamp((lampUp.t - lampUp.delay) / lampUp.dur, 0, 1));

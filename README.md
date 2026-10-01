@@ -31,7 +31,7 @@ npm run verify:colour     # the same rules, measured on screen under the lamp (n
 | `src/palette.js` | Every room colour (natural dyes and glazes, in OKLCH), the colour rules, the lamp's temperature |
 | `scripts/` | The colour scripts: `check-palette`, `calibrate-colour`, `verify-colour` |
 | `src/ui.js` | All DOM work: phrase, count, controls, fallback |
-| `src/audio.js` | Synthesised bead click and completion chime |
+| `src/audio.js` | Modal-synthesis bead clicks per material, rug landings, bell, chime, ambience |
 | `src/input.js` | Pointer and keyboard handling |
 | `src/main.js` | Boot, the counting / mode controller, the frame loop |
 
@@ -44,5 +44,6 @@ How it all fits together: [docs/architecture.md](docs/architecture.md).
 - [x] Stage 2: Amber that looks like amber
 - [x] Stage 3: Opening and typography
 - [x] Stage 4: Counting feedback
-- [x] Stage 5: A hand instead of the peg (waiting for your check in a real browser)
-- [ ] Stage 6–9: see the spec
+- [x] Stage 5: A hand instead of the peg
+- [x] Stage 6: Sound (waiting for your check in a real browser)
+- [ ] Stage 7–9: see the spec
