@@ -1,5 +1,7 @@
 # Misbaḥa
 
+**Live:** https://jameel7007.github.io/misbaha/ (published by `.github/workflows/pages.yml` on every push to `main`)
+
 A 3D strand of 99 prayer beads you can count with, built with Three.js and a small
 hand-written physics simulation. The build plan lives in [reference/spec.md](reference/spec.md);
 the single-file version this project started from is [reference/baseline.html](reference/baseline.html).
