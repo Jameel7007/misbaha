@@ -426,8 +426,8 @@ The Hold round trip works, and so does the palette.
 
 ## Stage 6: sound
 
-*(The synthesised bead clicks below were replaced by real recordings after Stage 7; see
-"Real recordings" below. The rest of this section still holds.)*
+*(After Stage 7 the click went back to the original page's, and the ambience became the
+ney; see "Sound, revised" below.)*
 
 **No recordings, so modal synthesis.** The spec asks for recorded clicks; none were
 available, and fetching sound files from the web needs the owner's permission. Instead
@@ -510,51 +510,45 @@ never passes a bead (tested).
   units (`dvh`), and the scrolling body has `min-height: 0`, which lets a flex child
   shrink and scroll.
 
-## Real recordings (after Stage 7)
+## Sound, revised: the original click and the ney (after Stage 7)
 
-**Why.** The synthesised clicks sounded electronic: a few pure decaying sines can't
-carry the messy detail of a real bead hitting a real bead. With the owner's go-ahead,
-six Creative Commons recordings were downloaded from Freesound (`audio-src/`, credits in
-`audio-src/SOURCES.md` and in About).
+**What was tried.** The Stage 6 clicks (modal synthesis) sounded electronic. Real
+recordings of beads from Freesound came next: single clicks found automatically in
+the recordings (onset detection), cut, levelled and played at random. They didn't sound
+right either. The owner chose the click from the original single-file page, for all
+three materials.
 
-**Cutting single clicks out of a recording** (`scripts/build-clicks.mjs`, with
-`scripts/lib/clicks.mjs`). `ffmpeg` decodes each file to raw samples. A click is found
-where the loudness (the peak in each millisecond) jumps at least 12 dB above the 10 ms
-before it. Each one is measured: how much quieter the 30 ms before it was (isolation),
-whether another click follows within 50 ms (crowded), and how bright it is (spectral
-centroid). Only clean ones are kept (isolation over 15 dB, not crowded); from the
-cleanest, a set spread across brightness is chosen, so the set doesn't all sound alike.
-Each is cut from 2 ms before the hit to 120 ms, with a 30 ms fade, rumble below 80 Hz
-removed, and levelled on its first 30 ms so every material plays equally loud.
+**The click now.** Exactly the original: 50 ms of white noise that dies away in about
+3.5 ms, through a band-pass filter at 2.7 kHz (the original amber setting) with Q 5, the
+centre moved ±10% each time. The noise is fresh on every click, so no two are the same.
+The separators, the landing tick (0.45, 50 ms after) and landings on the rug use it too.
+The bowl bells at 33 and 100 stay.
 
-Two of the six recordings had no usable single clicks (one is a continuous rattle, one
-shaken bursts), which the measurements showed before any listening. In the end: amber
-plays 10 clicks from a rosary, olive 10 from a wooden bracelet, ebony 7 from two
-abacuses.
+**The ambience: the ney.** The ney is the end-blown reed flute at the heart of Sufi
+music. Four Freesound recordings are in `src/ney/` (credits in `src/ney/SOURCES.md` and
+in About). `scripts/find-phrases.mjs` finds the phrases in each:
+- the loudness is measured every 50 ms;
+- a phrase starts where it jumps at least 15 dB from near-silence (a pause, a breath, or
+  the end of the last note's reverb tail), so dips inside a phrase don't split it;
+- each phrase gets a gain that brings it to the same loudness as the others.
 
-**Getting them into the page.** The clicks are stored as 16-bit samples at 32 kHz in a
-generated module, `src/clicks.data.js` (about 270 kB as text). `audio.js` imports it
-dynamically, so it loads alongside the scene without delaying the first frame, and turns
-it into audio buffers directly, with no decoding step. Sound starts once both the
-recordings and the Begin press are there.
+It found 13 phrases, about 70 seconds of playing. The page plays one at a time, in random
+order (none of the last four again), with 3–9 seconds of quiet between, panned a little
+left or right, in a long dark synthetic hall (about 3 s), over a very faint room tone. So
+it never loops audibly. The ney sits about 9 dB under where it started: measured second
+by second, phrases come to about −33 dB against the clicks' sharp peaks.
 
-**What stays synthesised, and why.** The brass separators: a real hard click for the
-contact plus a short ring of decaying modes; metal rings in clean modes, so synthesis
-works there. The bells at 33 and 100 were pure sine tones; they are now struck bowls,
-with partials at the uneven ratios of a real bowl (1 : 2.71 : 5.08 : 8.2), each a close
-pair that beats slowly, the higher ones dying sooner.
+**Loading.** The four MP3s (1.8 MB) are fetched and decoded only when the ambience is
+first turned on. In the single-file build they are inlined, which makes that file 3.8 MB.
 
-**Landings.** The rug's low-pass filter moved from 1.4 kHz to 3 kHz (with more gain):
-real clicks have their energy at 5–9 kHz, so at 1.4 kHz a dropped strand was nearly
-silent.
+**Scheduling.** Phrases are booked on the audio clock up to 30 seconds ahead and topped
+up every 5 seconds, so timing never depends on the frame loop. Offline, the whole span
+is booked at once, which is how the test renders it.
 
-**Anti-repetition** is as before, except no recording repeats either of the last two
-played from its bank.
-
-**How it was checked.** The same offline renders as Stage 6: consecutive clicks have a
-median similarity of 0.12–0.23 (identical copies would be 1.0), nothing clips; the live
-site's counts are unchanged (10 slow taps play 20 clicks, a Hold drop 20 landings), and
-99 taps at 50 ms still all arrive in order.
+**How it was checked.** Offline renders of every sound, with a minute of ambience under
+slow counting; per-second loudness of the ambience against the clicks; in the live site,
+the counts of clicks, landings and ney phrases through real input; the production and
+single-file builds play both, with no console errors.
 
 ## Interview questions this answers
 
@@ -603,9 +597,9 @@ site's counts are unchanged (10 slow taps play 20 clicks, a Hold drop 20 landing
 - *How do you find a measurement bug?* Here, excluding a new object from the bead mask
   changed the bead colours sharply, which revealed that an older object (the peg) had
   been counted as beads all along.
-- *Why are real recordings better than synthesis for small impacts?* A real click is
-  full of detail synthesis leaves out: irregular contact, many modes, the room. Synthesis
-  is still right for things with clean modes, like a metal ring.
+- *How do you play background music without an audible loop?* Cut recordings into
+  phrases, play them in random order with random pauses, and schedule them on the audio
+  clock ahead of time rather than from the frame loop.
 - *How do you find events in a recording automatically?* Onset detection: follow the
   short-term envelope and mark where it rises sharply above what came just before; then
   measure each event (isolation, overlap, brightness) and keep the clean ones.

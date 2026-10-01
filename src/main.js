@@ -1,11 +1,11 @@
 // Boot, the counting / mode controller, and the frame loop.
-import { bell, chime, click, setMaterial, setRoomTone, setSoundEnabled, unlockAudio } from './audio.js';
+import { bell, chime, click, setAmbience, setSoundEnabled, unlockAudio } from './audio.js';
 import * as dhikr from './dhikr.js';
 import { createDust } from './dust.js';
 import { createHand } from './hand.js';
 import { attachInput } from './input.js';
 import {
-  KIND, NL, PEG, PEG_BACK, PEG_FRONT, PEG_R, RAD, SIZE, TONE, X, clamp, dropPin, holdPin, impacts,
+  KIND, NL, PEG, PEG_BACK, PEG_FRONT, PEG_R, RAD, X, clamp, dropPin, holdPin, impacts,
   layoutHang, passPin, pinTop, releaseGrab, settle, sim, step,
 } from './physics.js';
 import { addRoom, createRig, createStage } from './scene.js';
@@ -74,12 +74,6 @@ async function boot(stage) {
   const persist = () => { saved.current = setKey; saved.progress[setKey] = { count, round }; dhikr.save(saved); };
   sim.pin = pinFor();
 
-  // ── sound for each body: a bead's pitch follows its size (smaller is higher) with a little
-  // of its own character; separators are brass; the imām, the largest, sounds lower
-  const voice = i => KIND[i] === 1 ? { model: 'brass' }
-    : KIND[i] === 2 ? { pitch: 0.78 }
-    : KIND[i] === 3 ? { pitch: 1.3 }
-    : { pitch: Math.pow(0.05 / SIZE[i], 0.8) * (1 + (TONE[i] - 0.5) * 0.03) };
   // landings on the rug: the strongest two per 40 ms, louder the faster they land
   let lastLanding = 0;
   function playLandings(now) {
@@ -88,7 +82,7 @@ async function boot(stage) {
       const hits = [];
       for (let j = 0; j < impacts.length; j += 2) hits.push([impacts[j], impacts[j + 1]]);
       hits.sort((a, b) => b[1] - a[1]);
-      for (const [i, speed] of hits.slice(0, 2)) click(0.15 + 0.6 * Math.max(0, Math.min(1, (speed - 1.5) / 20)) ** 0.7, { ...voice(i), soft: true });
+      for (const [i, speed] of hits.slice(0, 2)) click(0.15 + 0.6 * Math.max(0, Math.min(1, (speed - 1.5) / 20)) ** 0.7, { soft: true });
       lastLanding = now;
     }
     impacts.length = 0;
@@ -112,14 +106,14 @@ async function boot(stage) {
     // the fastest the thread constraints follow cleanly) so the strand catches up
     const dur = queued > 0 || auto ? clamp(0.1 - 0.008 * queued, 0.05, 0.1) : 0.17;
     adv = { t: 0, dur, a0, a1: a0 + da, r0: Math.hypot(dx, dy), r1: PEG_R + RAD[sim.pin] + 0.001, z0: X[k + 2] };
-    if (!auto) { click(1, voice(sim.pin)); try { navigator.vibrate && navigator.vibrate(6); } catch (e) {} }
+    if (!auto) { click(1); try { navigator.vibrate && navigator.vibrate(6); } catch (e) {} }
   }
   function arrive() {
     const { pin } = sim;
-    if (KIND[pin] === 1) { click(0.6, voice(pin)); startAdvance(true); return; }   // separators pass on their own
+    if (KIND[pin] === 1) { click(0.6); startAdvance(true); return; }   // separators pass on their own
     // the bead settling onto the finger: a softer tick, skipped while taps are waiting so a
     // fast run doesn't double up
-    if (queued === 0) click(0.45, { ...voice(pin), delay: 0.03 });
+    if (queued === 0) click(0.45, { delay: 0.05 });
     count++;
     persist();
     const set = currentSet(), v = dhikr.view(set, count);
@@ -225,7 +219,6 @@ async function boot(stage) {
   function setVariety(key) {
     store.set('variety', key);
     strand.setVariety(key);
-    setMaterial(key);
     ui.showVariety(key);
   }
   let soundOn = true;   // every visit starts with sound; the Sound button turns it off for this visit
@@ -242,7 +235,7 @@ async function boot(stage) {
       if (soundOn) click(0.6);
     },
     onReset: reset,
-    onRoomTone: on => setRoomTone(on),   // off by default, and not remembered
+    onRoomTone: on => setAmbience(on),   // off by default, and not remembered
   });
   const input = attachInput({
     canvas: ui.canvas, camera, rig,
