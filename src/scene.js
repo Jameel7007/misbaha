@@ -185,8 +185,8 @@ export function addRoom(scene, tex, dimEnv) {
 
 // orbit camera that eases toward a goal; one preset per mode, plus the wide opening shot.
 // On phones the header and the control bar take part of the screen, so each preset can be
-// framed into the free region: the subject (a box in the world) is pulled back until it
-// fits, then the picture is shifted (a view offset, so the camera still looks the same way)
+// framed into the free region: the camera moves back or closer until the subject (a box in
+// the world) fills it, then the picture is shifted (a view offset, so the camera still looks the same way)
 // until the subject sits in the middle of the region.
 const easeInOutCubic = t => t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
 export function createRig(camera) {
@@ -220,10 +220,13 @@ export function createRig(camera) {
   }
   function fit(p, pts, r) {
     const rw = r.right - r.left, rh = r.bottom - r.top;
-    for (let i = 0; i < 4; i++) {   // on screen, size goes roughly as 1 / distance
+    // on screen, size goes roughly as 1 / distance: pull back until the subject fits, or come
+    // closer while there's room (but never past 0.6 of the preset's distance)
+    const near = p.dist * 0.6;
+    for (let i = 0; i < 4; i++) {
       const b = screenBox(p, pts), s = Math.max((b[2] - b[0]) / (rw * 0.92), (b[3] - b[1]) / (rh * 0.92));
-      if (s <= 1.01) break;
-      p.dist *= s;
+      if (Math.abs(s - 1) < 0.01) break;
+      p.dist = Math.max(near, p.dist * s);
     }
     const b = screenBox(p, pts);
     p.ox = (b[0] + b[2]) / 2 - (r.left + r.right) / 2;

@@ -272,7 +272,7 @@ async function boot(stage) {
   const subjects = (() => {
     rod.update(); rod.group.updateMatrixWorld(true);
     const b = new Box3().setFromObject(rod.subject.finial);
-    b.expandByPoint(new Vector3(PEG.x - 0.25, PEG.y - 1.6, -0.6)).expandByPoint(new Vector3(PEG.x + 0.25, PEG.y + 0.2, 0.2));
+    b.expandByPoint(new Vector3(PEG.x - 0.25, PEG.y - 1.15, -0.6)).expandByPoint(new Vector3(PEG.x + 0.25, PEG.y + 0.2, 0.2));
     const corners = box => [0, 1, 2, 3, 4, 5, 6, 7].map(i => new Vector3(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z));
     return { count: corners(b), hold: corners(new Box3(new Vector3(-1.3, 0, -1), new Vector3(1.3, 0.3, 1))) };
   })();

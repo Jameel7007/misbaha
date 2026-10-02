@@ -721,6 +721,30 @@ burst an octave lower, wider (less of a tone), muffled above 1.1 kHz, at 40% of 
 level, and at most one every 70 ms. Measured: a dropped strand is about 15 dB quieter
 (−49 LUFS against −34) and plays 7 landings instead of 21.
 
+## Sharper on iPhones, and closer on phones
+
+**Why iPhones looked soft.** The adaptive quality's first guess read missing information
+as weakness: Safari reports no device memory and caps its core count, so every iPhone
+started at pixel ratio 1.25, on a screen with three pixels per point. Now an unknown is
+treated as unknown, phones start at ratio 2, and a fifth level, the screen's full 3×, is
+tried once frames have kept up for a while.
+
+**A step down must help.** iPhones in Low Power Mode, and some displays, cap animation at
+30 fps; the governor read that as "too slow" and lowered the resolution, which can't help.
+Now each step down is a trial: if the next measurement isn't at least 10% faster, the step
+is undone and the resolution is never lowered below that point again (the limit is
+elsewhere: a frame-rate cap or a busy processor). Two smaller changes: frames up to 250 ms
+now count (before, a device under 10 fps was ignored as "hitches"), and a measurement is
+90 frames or 1.5 s, whichever comes first, so a slow device is judged as quickly.
+
+Checked: emulated iPhone 15 in WebKit and a 30 fps cap both stay at ratio 2; an artificial
+load that grows with the pixels steps down (22 → 51 fps), and a very heavy one goes to the
+lowest level (9 → 31 fps); with the load removed it climbs back to the top.
+
+**Closer on phones.** The phone framing now fits the rod's end and the top 1.15 m of the
+strand (was 1.6 m) into the free space, and may move the camera closer when there's room
+(never nearer than 0.6 of the preset's distance), so the beads are about a third bigger.
+
 ## Interview questions this answers
 
 - *Why position-based dynamics over a force-based spring model?* It stays stable under
