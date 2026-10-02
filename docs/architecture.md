@@ -669,12 +669,12 @@ lined up with the pictures by the time it started. The script plays a short visi
 title, Begin, the flute, counting through the thirty-third bead (the bell and the glow),
 Hold, a bead lifted and dropped, back to Count, a small turn of the view.
 
-## After Stage 9: a carved stone hand, Drop, and softer landings
+## After Stage 9: a carved jade hand, Drop, and softer landings
 
 **The hand, carved.** The Stage 5 hand was low-poly grey plaster: separate faceted pieces
 that read as a blocky glove, mostly outside the lamp so it came out charcoal, and its
-forearm ended in mid-air. It is now one form carved from black stone (`hand.js`, meshed by
-`sdf-mesh.js`).
+forearm ended in mid-air. It is now one form carved from nephrite jade (`hand.js`, meshed
+by `sdf-mesh.js`).
 - **One form from many pieces.** Each part (finger bones, curled fingers, the fist, palm,
   wrist, the thumb's root) is a rounded cone or an ellipsoid described by a *signed
   distance function*: for any point, how far it is from the surface. A *smooth minimum*
@@ -694,23 +694,41 @@ forearm ended in mid-air. It is now one form carved from black stone (`hand.js`,
   before), and 2.8 s with the processor slowed sixfold (1.9 s before).
 - **The thumb still moves.** Its two bones are carved once each and moved rigidly by the
   same two-bone IK; a ball at the knuckle hides the joint.
-- **The arm.** The forearm now hangs down and back from the raised hand to an elbow below
-  the picture, and the upper arm goes back into the dark behind the wall, meshed coarser
-  because it's out of the light. Its colour falls off with distance from the knuckles, so
-  it fades into the dark. Phones frame the hand, not the arm.
-- **The stone.** A cool black basalt (palette `HAND.stone`, L 0.14), so the warm lamp
-  renders it neutral rather than brown; a satin polish (roughness 0.4) so the knuckles
-  catch the lamp; and a faint grain that varies colour and polish, fixed to the hand so it
-  doesn't swim as the hand moves.
-- **A colour rule, restated honestly.** The rules said the hand must be lighter than ebony
-  beads and ΔE 0.1 from them. Lighter was never the point (clear of ebony's tone is), so
-  that rule now accepts either side. The ΔE rule can't be met by any dark polished stone
-  here: right under the lamp, a polished surface reflects about 4% of it, which puts a
-  floor of about L 0.21 on the finger whatever the stone's colour, near ebony's 0.27. So
-  the hand has its own role, *carving*: an object the strand passes over and hangs in
-  front of, not a ground beads lie on. It is checked against the beads' lit faces (how an
-  ebony bead actually reads against it: by its lit side and its shine), and must stay
-  darker than lit amber. Both colour checks pass.
+- **The arm.** The forearm hangs down and back from the raised hand to an elbow below the
+  picture, and the upper arm goes back into the dark behind the wall, meshed coarser
+  because it's out of the light. From just past the wrist its colour falls off, so it
+  fades into the dark. Phones frame the hand, not the arm.
+
+**Why the first stone was black whatever its colour.** The first carving was black
+basalt, and the owner found it far too dark; lighter stones barely helped. The cause was
+light, not colour: the lamp points straight down, so it only reaches the tops of the
+fingers, and the side of the hand facing the viewer looks sideways into a dark room with
+almost nothing to reflect. A real room would fill it with light bounced off the lit rug and
+the glowing wall. So the hand's material has its own soft *bounce fill*: warm, from the
+viewer's side and a little below, rising and falling with the lamp, for the hand alone
+(nothing else in the room changes). It also keeps more of the room's reflected light
+outside the lamp's cone than other surfaces do (the gate in `scene.js`), as it sits right
+beside the beam. (A bug was found on the way: the arm's fade had been measured from the
+palm, which also darkened the fingers.)
+
+**Jade.** With the fill in place, four stones (black, charcoal, slate, grey) and three
+jades were rendered side by side, and the owner chose a deep nephrite jade: palette
+`HAND.jade` (L 0.38, C 0.055, h 155), polished (roughness 0.28), with a faint mottled grain
+fixed to the hand so it doesn't swim as the hand moves. Green also keeps the hand's hue
+far from the beads' amber.
+
+**Colour rules, restated honestly.**
+- The hand has its own role, *carving*: an object the strand passes over and hangs in
+  front of, not a ground beads lie on. It must stay darker than lit amber, and is checked
+  against each bead's lit face (how a bead actually reads against it).
+- "Lighter than ebony" became "clear of ebony's tone, either side": being away from
+  ebony's lightness was always the point.
+- **One waiver, written down.** Ebony beads' lit faces are ΔE 0.078 from the jade, under
+  the 0.1 minimum; they still differ plainly by hue (brown on green). Every variation that
+  passed it either turned the jade teal or made its lamp-lit top outshine the beads, so
+  the chosen colour stays and the shortfall is listed in `WAIVERS` (palette.js), printed by
+  both checks on every run instead of failing. Tuning colours until a check passes was
+  rejected earlier in the project as the wrong way to be rigorous.
 
 **Hold is now Drop.** Only the button's word and the help text changed; the code still
 calls the mode `hold`.
@@ -773,8 +791,12 @@ level, and at most one every 70 ms. Measured: a dropped strand is about 15 dB qu
   smooth min (a fillet). Surface nets or marching cubes sample it on a grid and place
   triangles where the sign changes.
 - *When should a design rule bend?* When the reason behind it can be met another way, or
-  physics makes it unreachable: restate the rule around its purpose and write down why,
-  rather than tuning numbers until a check passes.
+  physics makes it unreachable: restate the rule around its purpose, or record a waiver
+  with its reason where everyone will see it, rather than tuning numbers until a check
+  passes.
+- *Why can a surface look black whatever its colour?* Colour is how much of the light
+  arriving is reflected; if almost no light arrives (a face turned away from the only
+  lamp, in a dark room), every colour renders near black. Fix the light, not the colour.
 - *How do you record a WebGL page with its sound?* Take the browser's own screencast
   frames with their times, hold each until the next (constant-frame-rate video that keeps
   real time), and tap the Web Audio graph into a `MediaRecorder`, aligned by start time.

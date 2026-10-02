@@ -62,12 +62,18 @@ export const WALL = {
   grout:     { L: 0.20, C: 0.01,  h: 60,  role: 'line',   note: 'joints between tiles' },
 };
 
-// the hand: a dark, honed stone (a soapstone or basalt), like a carving, so it implies no
-// particular skin tone. Darker than ebony beads (clear of their tone, so an ebony bead on the
-// finger still reads), so the beads stay the brightest thing in the lamp. Black, as
-// basalt is, faintly cool so the warm lamp renders it a neutral black rather than a brown
-// that would drift toward the beads' amber
-export const HAND = { stone: { L: 0.14, C: 0.012, h: 240, role: 'carving', note: 'dark carved stone: the hand holding the strand' } };
+// the hand: carved from nephrite jade, the deep spinach green of classic jade carving, so it
+// implies no particular skin tone. Green is the colour of Paradise (Stage 1's palette), and
+// jade's hue sits far from the beads' amber; kept darker and less saturated than the beads
+// so they stay the brightest, most saturated thing in the lamp
+export const HAND = { jade: { L: 0.38, C: 0.055, h: 155, role: 'carving', note: 'nephrite jade: the carved hand holding the strand' } };
+
+// Waivers: a rule failure accepted on purpose, with the reason. The checks print each one
+// on every run instead of failing, so it stays visible.
+export const WAIVERS = [
+  { colour: 'jade', bead: 'ebony', rule: 'figure-ground',
+    reason: 'the owner chose this nephrite by eye; an ebony bead reads against it by hue (brown on green) though their lit faces are ΔE ≈ 0.08 apart. Moving the jade far enough to pass turns it teal or makes its lamp-lit top outshine the beads.' },
+];
 
 // colours that touch each other in the patterns (for the neighbour rule)
 export const NEIGHBOURS = [
@@ -113,4 +119,4 @@ const hexes = set => Object.fromEntries(Object.entries(set).map(([k, c]) => [k, 
 export const RUG_HEX = hexes(RUG);
 export const TILE_HEX = hexes(WALL);
 export const FLOOR_HEX = hexes(FLOOR).floor;
-export const HAND_HEX = hexes(HAND).stone;
+export const HAND_HEX = hexes(HAND).jade;

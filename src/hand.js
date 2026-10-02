@@ -1,4 +1,4 @@
-// A right hand carved from dark stone, holding the strand over its index finger.
+// A right hand carved from nephrite jade, holding the strand over its index finger.
 // Only the index finger is physical (a capsule collider in physics.js); the rest of the hand
 // is visual. The thumb rests behind the current bead and, while a bead passes over the
 // finger, its tip follows just behind that bead (two-bone inverse kinematics), so every
@@ -12,14 +12,14 @@
 // Local frame: the index finger's tip is at the origin and the finger runs back along -z;
 // +y is up, +x faces the camera (the back of the hand). The whole group follows the finger
 // (sim.pegEnd), so in Hold mode the hand slides back with it.
-import { BufferAttribute, Group, Matrix4, Mesh, MeshStandardMaterial, Quaternion, SphereGeometry, Vector3 } from 'three';
+import { BufferAttribute, Color, Group, Matrix4, Mesh, MeshStandardMaterial, Quaternion, SphereGeometry, Vector3 } from 'three';
 import { HAND_HEX } from './palette.js';
 import { PEG, PEG_R, X, sim } from './physics.js';
 import { coneSphere, ellipsoid, meshSDF, roundCone, union } from './sdf-mesh.js';
 
 const UP = new Vector3(0, 1, 0);
 
-// stone grain: a faint, slow mottling of the colour and the polish, fixed to the hand (not
+// the stone's grain: jade's faint, slow mottling of the colour and the polish, fixed to the hand (not
 // the world) so it doesn't swim when the hand moves
 const GRAIN = {
   vertex: ['#include <common>', '#include <common>\nuniform mat4 uHandInv;\nvarying vec3 vStone;', '#include <worldpos_vertex>', '#include <worldpos_vertex>\nvStone = (uHandInv * modelMatrix * vec4(transformed, 1.0)).xyz;'],
@@ -34,15 +34,25 @@ const GRAIN = {
 };
 
 export function createHand(scene) {
-  // a dark, honed stone: a soft sheen where the lamp catches the knuckles, never a mirror
-  const material = new MeshStandardMaterial({ color: HAND_HEX, roughness: 0.4, metalness: 0, vertexColors: true });
+  // polished jade: a glassy sheen where the lamp catches the knuckles, never a mirror
+  const material = new MeshStandardMaterial({ color: HAND_HEX, roughness: 0.28, metalness: 0, vertexColors: true });
   const uHandInv = { value: new Matrix4() };
+  // bounce light: the lamp only reaches the hand's top, so its side toward the viewer would be
+  // black. In a room, light bouncing off the lit rug and the glowing wall fills that side;
+  // this is that fill, for the hand alone: soft, warm, from the viewer's side and a little
+  // below, rising and falling with the lamp. Its direction is in the world, turned into the
+  // camera's frame each frame (onBeforeRender below).
+  const FILL_DIR = new Vector3(0.75, -0.25, 0.6).normalize();
+  const uFill = { value: new Color(1, 0.86, 0.72).multiplyScalar(0.55) }, uFillDir = { value: new Vector3() };
   material.onBeforeCompile = shader => {
     shader.uniforms.uHandInv = uHandInv;
+    shader.uniforms.uFill = uFill; shader.uniforms.uFillDir = uFillDir;
     const [a, b, c, d] = GRAIN.vertex;
     shader.vertexShader = shader.vertexShader.replace(a, b).replace(c, d);
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>' + GRAIN.fragment)
+      .replace('#include <common>', '#include <common>' + GRAIN.fragment + '\nuniform vec3 uFill, uFillDir;')
+      .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+        reflectedLight.indirectDiffuse += diffuseColor.rgb * uFill * (0.25 + 0.75 * max(dot(normal, uFillDir), 0.0)) * uLampLevel;`)
       .replace('#include <color_fragment>', `#include <color_fragment>
         float grain = 0.65 * stoneNoise(vStone * 9.0) + 0.35 * stoneNoise(vStone * 31.0);
         diffuseColor.rgb *= 0.86 + 0.28 * grain;`)
@@ -50,6 +60,9 @@ export function createHand(scene) {
         roughnessFactor = clamp(roughnessFactor + (0.5 - grain) * 0.16, 0.0, 1.0);`);
   };
   material.customProgramCacheKey = () => 'carved-stone';
+  // the hand sits just beside the lamp's beam: it keeps more of the room's reflected light
+  // than surfaces further out (scene.js gateToLamp), as it would from the lamp's spill
+  material.userData.gateFloor = { value: 0.5 };
   const group = new Group();
   scene.add(group);
   const add = m => { m.castShadow = true; group.add(m); return m; };
@@ -81,6 +94,7 @@ export function createHand(scene) {
   const thumbBase = v(0.07, -0.06, -1.36), thumbRoot = v(0.08, 0.1, -1.0);
   cone(thumbBase, thumbRoot, 0.085, 0.08, 0.07);
   const body = add(new Mesh(meshSDF(union(pieces), [[-0.24, 0.3], [-1.12, 0.16], [-2.12, 0.03]], 0.014), material));
+  body.onBeforeRender = (renderer, scene, camera) => uFillDir.value.copy(FILL_DIR).transformDirection(camera.matrixWorldInverse);
   // the rest of the arm, out of the light, so meshed coarser: the forearm hangs down and back
   // from the raised hand to the elbow, below the bottom of the picture, and the upper arm
   // goes back into the dark behind the wall. A touch thinner than the fine mesh where the two overlap, so
@@ -90,12 +104,14 @@ export function createHand(scene) {
     [roundCone(A(wrist), A(elbow), 0.145, 0.19), 0],
     [roundCone(A(elbow), [0.12, -4.9, -4.6], 0.19, 0.2), 0.05],
   ]), [[-0.2, 0.36], [-5.15, -0.15], [-4.85, -1.55]], 0.035), material));
-  // the colour falls off with distance from the knuckles, so the arm fades into the dark
+  // the colour falls off along the arm, from just past the wrist, so it fades into the dark
+  // (the hand itself, ahead of the wrist, keeps its full colour)
+  const along = elbow.clone().sub(wrist).normalize();
   for (const m of [body, arm]) {
     const P = m.geometry.attributes.position, C = new Float32Array(P.count * 3);
     for (let i = 0; i < P.count; i++) {
-      const dist = Math.hypot(P.getX(i), P.getY(i) + 0.35, P.getZ(i) + 1.25);
-      const t = Math.min(1, Math.max(0, (1.45 - dist) / 0.75)), f = 0.04 + 0.96 * t * t * (3 - 2 * t);
+      const s = (P.getX(i) - wrist.x) * along.x + (P.getY(i) - wrist.y) * along.y + (P.getZ(i) - wrist.z) * along.z;
+      const t = Math.min(1, Math.max(0, (1.4 - s) / 1.1)), f = 0.04 + 0.96 * t * t * (3 - 2 * t);
       C[3 * i] = C[3 * i + 1] = C[3 * i + 2] = f;
     }
     m.geometry.setAttribute('color', new BufferAttribute(C, 3));

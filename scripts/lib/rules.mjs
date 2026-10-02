@@ -1,6 +1,6 @@
 // The palette rules, applied either to the daylight material colours (check:palette) or to
 // the colours that reach the screen under the lamp (verify:colour). Colours are OKLCH.
-import { NEIGHBOURS, RULES, deltaE, inGamut, lchToLab } from '../../src/palette.js';
+import { NEIGHBOURS, RULES, WAIVERS, deltaE, inGamut, lchToLab } from '../../src/palette.js';
 
 const hueGap = (h, lo, hi) => (h >= lo && h <= hi) ? 0 : Math.min(...[lo, hi].map(b => Math.min(Math.abs(h - b), 360 - Math.abs(h - b))));
 
@@ -30,7 +30,13 @@ export function checkRules(groups, beads, lit) {
       // and must stay below amber's
       if (c.role === 'carving') {
         if (lit && c.L > b.amber.Lhi - RULES.valueMargin) fail(`${k}: lightness ${c.L.toFixed(2)} is above lit amber ${b.amber.Lhi.toFixed(2)} − ${RULES.valueMargin}`);
-        for (const [v, bc] of Object.entries(b)) { const e = deltaE(lchToLab(c), lchToLab(lit && bc.Lhi ? { ...bc, L: bc.Lhi } : bc)); if (e < RULES.figureGroundDE) fail(`${k} vs ${v} beads${lit ? ' (lit face)' : ''}: ΔE ${e.toFixed(3)} < ${RULES.figureGroundDE}`); }
+        for (const [v, bc] of Object.entries(b)) {
+          const e = deltaE(lchToLab(c), lchToLab(lit && bc.Lhi ? { ...bc, L: bc.Lhi } : bc));
+          if (e >= RULES.figureGroundDE) continue;
+          const msg = `${k} vs ${v} beads${lit ? ' (lit face)' : ''}: ΔE ${e.toFixed(3)} < ${RULES.figureGroundDE}`;
+          const w = WAIVERS.find(w => w.colour === k && w.bead === v && w.rule === 'figure-ground');
+          if (w) console.log(`  WAIVED ${msg}: ${w.reason}`); else fail(msg);
+        }
         continue;
       }
       if (c.role !== 'area') continue;

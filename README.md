@@ -34,7 +34,7 @@ npm run verify:colour     # the same rules, measured on screen under the lamp (n
 | `scripts/` | The colour scripts: `check-palette`, `calibrate-colour`, `verify-colour` |
 | `src/dhikr.js` | The dhikr sets (phrases, blocks, closing words), what to show at each count, saved progress |
 | `src/ui.js` | All DOM work: title, phrase, tally ring, controls, set picker and About, the completion moment |
-| `src/sdf-mesh.js` | Smooth shapes from distance functions (surface nets): the carved hand |
+| `src/sdf-mesh.js` | Smooth shapes from distance functions (surface nets): the carved jade hand |
 | `src/cursor.js` | The custom cursor on desktop: Pass, Drag, Turn |
 | `scripts/make-share.mjs` | `npm run make:share`: the link-preview image and home-screen icon (`public/`) |
 | `scripts/record-capture.mjs` | `npm run record`: a 28 s screen capture with sound (`capture/misbaha.mp4`) |
