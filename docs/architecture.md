@@ -741,9 +741,23 @@ Checked: emulated iPhone 15 in WebKit and a 30 fps cap both stay at ratio 2; an 
 load that grows with the pixels steps down (22 → 51 fps), and a very heavy one goes to the
 lowest level (9 → 31 fps); with the load removed it climbs back to the top.
 
-**Closer on phones.** The phone framing now fits the rod's end and the top 1.15 m of the
-strand (was 1.6 m) into the free space, and may move the camera closer when there's room
-(never nearer than 0.6 of the preset's distance), so the beads are about a third bigger.
+**Closer on phones.** The phone framing fits the rod's end and the top 0.85 m of the strand
+(first 1.6 m, then 1.15 m) into the free space, and may move the camera closer when there's
+room (never nearer than half the preset's distance): the beads are about 1.8 times the size
+they were.
+
+**Limits that expire.** The governor learns two limits: a level it failed to hold (the
+ceiling) and a level below which stepping down didn't help (the floor). Both were permanent,
+so one busy moment could keep a phone soft for the rest of the visit. Now the ceiling
+expires after a minute and the floor after three, and each is learnt again if still true.
+The unit tests found this: under a temporary load, quality never climbed back.
+
+**Tests and CI.** `tests/` holds unit tests run by Node's own test runner (no dependencies):
+the dhikr sets and the quality governor, which is driven by simulated frame times (an
+iPhone's first guess, a 30 fps cap over six minutes spending under 3% of the time below full
+sharpness, a pixel-bound load, a very slow device, recovery, a hidden tab). `npm run check`
+runs the palette rules, the tests and the build; a CI workflow runs it on pull requests and
+branches, and the Pages workflow runs it before every deploy.
 
 ## Interview questions this answers
 

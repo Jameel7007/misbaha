@@ -6,7 +6,7 @@ const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
 
 const HINTS = {
-  count: 'Tap anywhere or press Space to pass one bead over the peg. Drag to turn the view.',
+  count: 'Tap anywhere or press Space to pass one bead over the rod. Drag to turn the view.',
   hold: 'Drag any bead to lift the strand. Drag empty space to turn the view, scroll to zoom.',
 };
 const WESTERN = '0123456789', ARABIC_INDIC = '٠١٢٣٤٥٦٧٨٩';

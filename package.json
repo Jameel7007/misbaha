@@ -2,6 +2,9 @@
   "name": "misbaha",
   "private": true,
   "version": "0.1.0",
+  "description": "A 3D misbaḥa (99-bead prayer strand) in the browser: hand-written physics, a Hankin-pattern prayer rug in natural dyes, a turned walnut rod, and a checkable colour system.",
+  "homepage": "https://jameel7007.github.io/misbaha/",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,7 +17,9 @@
     "calibrate:colour": "node scripts/calibrate-colour.mjs",
     "find:phrases": "node scripts/find-phrases.mjs",
     "make:share": "node scripts/make-share.mjs",
-    "record": "node scripts/record-capture.mjs"
+    "record": "node scripts/record-capture.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check": "npm run check:palette && npm test && npm run build"
   },
   "dependencies": {
     "@fontsource-variable/instrument-sans": "^5.3.0",

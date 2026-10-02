@@ -1,4 +1,4 @@
-# Builds the site and publishes it to GitHub Pages on every push to main.
+# Checks, builds and publishes the site to GitHub Pages on every push to main.
 # https://jameel7007.github.io/misbaha/
 name: Publish to GitHub Pages
 
@@ -20,13 +20,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm run build
+      - name: Palette rules, tests, build
+        run: npm run check
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

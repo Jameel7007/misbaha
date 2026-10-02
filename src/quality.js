@@ -31,8 +31,13 @@ function guess(renderer) {
 
 export function createQuality({ renderer, lamp, onChange = () => {} }) {
   // ceiling: the best level allowed (a step up there failed); floor: the lowest (stepping
-  // below it didn't help); check: a step down on trial, with the median it had to beat
-  let level = -1, times = [], spent = 0, fastRuns = 0, ceiling = 0, floor = LEVELS.length - 1, check = null, settleUntil = 0, pinned = false;
+  // below it didn't help). Both are lessons from a moment (a busy phone, Low Power Mode
+  // switched on), so both expire and are learnt again if still true: the ceiling after a
+  // minute, the floor after three (a frame-rate cap tends to last, and each re-test costs a
+  // couple of seconds at the lower resolution). check: a step down on trial, with the median
+  // it had to beat
+  const CEILING_MS = 60000, FLOOR_MS = 180000;
+  let level = -1, times = [], spent = 0, fastRuns = 0, ceiling = 0, floor = LEVELS.length - 1, ceilingSet = 0, floorSet = 0, check = null, settleUntil = 0, pinned = false;
   const cap = () => Math.min(window.devicePixelRatio || 1, 3);
   function apply(next, now = performance.now()) {
     next = Math.max(ceiling, Math.min(LEVELS.length - 1, next));
@@ -64,17 +69,19 @@ export function createQuality({ renderer, lamp, onChange = () => {} }) {
       times.sort((a, b) => a - b);
       const median = times[times.length >> 1];
       times = [];
+      if (ceiling > 0 && now - ceilingSet > CEILING_MS) ceiling = 0;
+      if (floor < LEVELS.length - 1 && now - floorSet > FLOOR_MS) floor = LEVELS.length - 1;
       // a step down that didn't make frames at least 10% faster wasn't the answer: the limit
       // is elsewhere (a display or Low Power Mode capping at 30 fps, a busy processor). Undo
       // it, and don't lower the resolution below that again.
       if (check) {
         const c = check; check = null;
-        if (median > c.median * 0.9) { floor = c.from; apply(c.from, now); return; }
+        if (median > c.median * 0.9) { floor = c.from; floorSet = now; apply(c.from, now); return; }
       }
       if (median > SLOW_MS && level < floor) {
         check = { from: level, median };
         // if a step up just failed, don't try that level again
-        if (fastRuns === -1) ceiling = level + 1;
+        if (fastRuns === -1) { ceiling = level + 1; ceilingSet = now; }
         apply(level + 1, now);
       } else if (median < FAST_MS && level > ceiling) {
         if (++fastRuns >= UP_AFTER) { apply(level - 1, now); fastRuns = -1; }   // -1: on probation at the new level

@@ -221,8 +221,8 @@ export function createRig(camera) {
   function fit(p, pts, r) {
     const rw = r.right - r.left, rh = r.bottom - r.top;
     // on screen, size goes roughly as 1 / distance: pull back until the subject fits, or come
-    // closer while there's room (but never past 0.6 of the preset's distance)
-    const near = p.dist * 0.6;
+    // closer while there's room (but never past half the preset's distance)
+    const near = p.dist * 0.5;
     for (let i = 0; i < 4; i++) {
       const b = screenBox(p, pts), s = Math.max((b[2] - b[0]) / (rw * 0.92), (b[3] - b[1]) / (rh * 0.92));
       if (Math.abs(s - 1) < 0.01) break;
