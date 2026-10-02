@@ -181,7 +181,7 @@ body.ready .vignette { opacity: 1; }
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* phrases reveal word by word from below; the old phrase fades out first */
-.phrase { transition: opacity .25s ease; }
+.phrase { margin-top: 18px; transition: opacity .25s ease; }   /* air between the dhikr button and the Arabic's tallest marks */
 .phrase.out { opacity: 0; }
 .phrase .w { display: inline-block; opacity: 0; transform: translateY(.45em);
   transition: opacity .6s ease, transform .75s cubic-bezier(.2, .75, .2, 1); transition-delay: calc(var(--i) * 70ms); }
@@ -272,6 +272,7 @@ body.canvas-tabbed .focus-frame { opacity: .6; }
   .arabic { font-size: 38px; }
   .translit { font-size: 18px; }
   .gloss { font-size: 12px; }
+  .phrase { margin-top: 16px; }
   .tally { --ring: 104px; gap: 16px; margin-top: 22px; }
   .count .num { font-size: 40px; }
   .count .arnum { font-size: 13px; }
