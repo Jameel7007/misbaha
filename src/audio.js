@@ -25,16 +25,21 @@ function rand(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>
 
 // a struck bowl: partials at the uneven ratios of a real bowl, each a close pair that beats
 // slowly, the higher ones dying sooner; a soft mallet, so the attack takes a few milliseconds
-function renderBell(ac, f0, len, R) {
+// a struck bowl: partials [ratio, amplitude, decay share] at the uneven ratios of a real
+// bowl, each a close pair detuned by `beat` so it beats slowly; `mallet`: the attack, in seconds
+const BOWL = [[1, 1, 1], [2.71, 0.45, 0.55], [5.08, 0.22, 0.3], [8.2, 0.1, 0.16]];
+// the bell at 33 and 66: a small, soft tap: mostly the fundamental, the top partial left out,
+// barely beating, a felt mallet. (The first bell, a full bowl, sounded loud and eerie.)
+const SOFT_BOWL = [[1, 1, 1], [2.71, 0.18, 0.45], [5.08, 0.05, 0.25]];
+function renderBell(ac, f0, len, R, { partials = BOWL, beat = 0.0012, mallet = 0.004 } = {}) {
   const sr = ac.sampleRate, n = Math.floor(sr * len), buf = ac.createBuffer(2, n, sr);
-  const partials = [[1, 1, 1], [2.71, 0.45, 0.55], [5.08, 0.22, 0.3], [8.2, 0.1, 0.16]];   // ratio, amplitude, decay share
   for (let c = 0; c < 2; c++) {
     const d = buf.getChannelData(c);
-    for (const [r, a, k] of partials) for (const beat of [-1, 1]) {
-      const f = f0 * r * (1 + beat * 0.0012 + (R() - 0.5) * 0.0004), ph = R() * Math.PI * 2, tau = len * 0.32 * k;
+    for (const [r, a, k] of partials) for (const b of [-1, 1]) {
+      const f = f0 * r * (1 + b * beat + (R() - 0.5) * 0.0004), ph = R() * Math.PI * 2, tau = len * 0.32 * k;
       for (let i = 0; i < n; i++) { const t = i / sr; d[i] += 0.5 * a * Math.exp(-t / tau) * Math.sin(2 * Math.PI * f * t + ph); }
     }
-    for (let i = 0; i < n; i++) d[i] *= (1 - Math.exp(-i / sr / 0.004)) * Math.min(1, (n - i) / (sr * 0.05));
+    for (let i = 0; i < n; i++) d[i] *= (1 - Math.exp(-i / sr / mallet)) * Math.min(1, (n - i) / (sr * 0.05));
   }
   let peak = 0; for (let c = 0; c < 2; c++) for (const v of buf.getChannelData(c)) peak = Math.max(peak, Math.abs(v));
   for (let c = 0; c < 2; c++) { const d = buf.getChannelData(c); for (let i = 0; i < n; i++) d[i] /= peak; }
@@ -90,7 +95,7 @@ export function createEngine(ac) {
   const wet = ac.createGain(); wet.gain.value = 0.16; room.connect(wet); wet.connect(comp);
   const input = ac.createGain(); input.connect(dry); input.connect(room);
   const R = Math.random, R7 = rand(7);
-  const bellBuf = renderBell(ac, 523.25, 3, R7), chimeBuf = renderBell(ac, 392, 4.5, R7);
+  const bellBuf = renderBell(ac, 523.25, 2, R7, { partials: SOFT_BOWL, beat: 0.0004, mallet: 0.012 }), chimeBuf = renderBell(ac, 392, 4.5, R7);
 
   function play(buf, gain, rate, when, out) {
     const src = ac.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate;
@@ -115,7 +120,7 @@ export function createEngine(ac) {
       src.start(ac.currentTime + delay);
     },
     // a gentle bell at the end of each thirty-three
-    bell() { play(bellBuf, 0.09, 1, ac.currentTime + 0.04, input); },
+    bell() { play(bellBuf, 0.035, 1, ac.currentTime + 0.04, input); },
     // the fuller chime at the hundredth
     chime() { play(chimeBuf, 0.16, 1, ac.currentTime, input); },
     ambience: (() => {

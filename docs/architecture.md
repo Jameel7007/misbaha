@@ -759,6 +759,22 @@ sharpness, a pixel-bound load, a very slow device, recovery, a hidden tab). `npm
 runs the palette rules, the tests and the build; a CI workflow runs it on pull requests and
 branches, and the Pages workflow runs it before every deploy.
 
+## A tidier header, and a quieter bell
+
+**The header.** The dhikr's name was a small caption with a tiny chevron, so few would
+guess it opens the set picker; it is now an outlined pill button with a clear chevron that
+brightens on hover. The phrase lines and the count have more room between them (the count
+sits 34 px below the meaning instead of 18). The count in Arabic-Indic numerals moved inside
+the ring, small, under the number: beside "/ 33" it read like a second number. Over the
+header's words the desktop cursor steps back to a faint dot without its word, instead of
+"Pass" floating over the Arabic (a click there still passes a bead).
+
+**The bell at 33 and 66.** It was a full struck bowl: four uneven partials, each a detuned
+pair beating slowly, for three seconds; the owner found it loud and a little eerie. It is now
+a small soft tap: mostly the fundamental, the top partial left out and the others much
+quieter, barely beating, a softer mallet (12 ms attack), two seconds long, about 9 dB lower
+at its peak. The fuller chime at the hundredth is unchanged.
+
 ## Interview questions this answers
 
 - *Why position-based dynamics over a force-based spring model?* It stays stable under

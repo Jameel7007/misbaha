@@ -15,6 +15,8 @@ export function createCursor(canvas) {
   const label = el.lastChild;
 
   let x = -100, y = -100, cx = x, cy = y, over = false, raf = 0;
+  const header = ['setBtn', 'phrase', 'ring', 'of', 'total', 'round'].map(id => document.getElementById(id));
+  const overHeader = (px, py) => header.some(h => { const r = h.getBoundingClientRect(); return px >= r.left - 8 && px <= r.right + 8 && py >= r.top - 8 && py <= r.bottom + 8; });
   const show = () => el.classList.toggle('on', over && fine.matches && document.body.classList.contains('begun'));
   function tick() {
     const k = still.matches ? 1 : 0.45;   // per frame: close enough to feel attached
@@ -27,6 +29,8 @@ export function createCursor(canvas) {
     x = e.clientX; y = e.clientY;
     // over the canvas, or dragging from it (pointer capture keeps events on the canvas)
     over = e.target === canvas;
+    // the header lets clicks through to the beads, but over its words the cursor steps back
+    el.classList.toggle('quiet', over && !e.buttons && overHeader(x, y));
     if (!over) { cx = x; cy = y; }   // re-entering: no trail across the screen
     show();
     if (!raf) raf = requestAnimationFrame(tick);
