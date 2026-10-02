@@ -669,66 +669,48 @@ lined up with the pictures by the time it started. The script plays a short visi
 title, Begin, the flute, counting through the thirty-third bead (the bell and the glow),
 Hold, a bead lifted and dropped, back to Count, a small turn of the view.
 
-## After Stage 9: a carved jade hand, Drop, and softer landings
+## After Stage 9: a turned walnut rod, Drop, and softer landings
 
-**The hand, carved.** The Stage 5 hand was low-poly grey plaster: separate faceted pieces
-that read as a blocky glove, mostly outside the lamp so it came out charcoal, and its
-forearm ended in mid-air. It is now one form carved from nephrite jade (`hand.js`, meshed
-by `sdf-mesh.js`).
-- **One form from many pieces.** Each part (finger bones, curled fingers, the fist, palm,
-  wrist, the thumb's root) is a rounded cone or an ellipsoid described by a *signed
-  distance function*: for any point, how far it is from the surface. A *smooth minimum*
-  joins them with a fillet instead of a crease, as a carver leaves stone between finger
-  and palm; the fillets between the curled fingers are kept small, so they stay three
-  fingers with a groove between.
-- **From a distance function to triangles: surface nets.** Sample the function on a grid
-  (1.4 cm); every cell the surface passes through gets one vertex (where the surface
-  crosses its edges, then nudged onto the surface); every grid edge it crosses becomes a
-  square between the four cells around it. Normals come from the function's gradient, so
-  the shading is smooth.
-- **Fast enough to do at load.** The first version took a second. Two changes brought it
-  to about 0.2 s: sample a grid four times coarser first, and only evaluate exactly near
-  the surface (a distance field changes no faster than distance, so far from the surface
-  the coarse values already decide the sign); and skip any piece too far from a point to
-  change the result. Measured on the production build: ready to begin 0.65 s (0.45 s
-  before), and 2.8 s with the processor slowed sixfold (1.9 s before).
-- **The thumb still moves.** Its two bones are carved once each and moved rigidly by the
-  same two-bone IK; a ball at the knuckle hides the joint.
-- **The arm.** The forearm hangs down and back from the raised hand to an elbow below the
-  picture, and the upper arm goes back into the dark behind the wall, meshed coarser
-  because it's out of the light. From just past the wrist its colour falls off, so it
-  fades into the dark. Phones frame the hand, not the arm.
+**From a hand back to a rod.** Stage 5's low-poly hand was rebuilt as one carved form (a
+signed distance field, meshed by surface nets), first in black basalt and then in nephrite
+jade. Seen from the side it still read as strange: the thumb floated like a second finger.
+The owner chose to go back to a rod, made with care. The carving code was removed; it is
+in the git history (`hand.js`, `sdf-mesh.js`) if it is ever wanted.
 
-**Why the first stone was black whatever its colour.** The first carving was black
-basalt, and the owner found it far too dark; lighter stones barely helped. The cause was
-light, not colour: the lamp points straight down, so it only reaches the tops of the
-fingers, and the side of the hand facing the viewer looks sideways into a dark room with
-almost nothing to reflect. A real room would fill it with light bounced off the lit rug and
-the glowing wall. So the hand's material has its own soft *bounce fill*: warm, from the
-viewer's side and a little below, rising and falling with the lamp, for the hand alone
-(nothing else in the room changes). It also keeps more of the room's reflected light
-outside the lamp's cone than other surfaces do (the gate in `scene.js`), as it sits right
-beside the beam. (A bug was found on the way: the arm's fade had been measured from the
-palm, which also darkened the fingers.)
+**The rod** (`rod.js`). Turned walnut inlaid with mother-of-pearl, as in Damascene
+woodwork, chosen by eye from three rendered finishes (all brass; walnut and nacre; jade
+with brass fittings; `?rod=brass` or `?rod=jade` shows the others in development).
+- **Turned forms.** The finial at the tip (a ring, a neck, an onion bulb and a spire, like
+  a minaret's finial) and the collar at the wall are lathe profiles: a list of radii along
+  the axis, spun around it (`LatheGeometry`).
+- **The rosette** where the rod enters the wall is an eight-pointed star (the khatam of
+  the wall's own tilework): two squares, one turned 45°, extruded with a bevel, with a
+  smaller nacre star laid into it.
+- **Walnut grain.** A shader adds long uneven streaks along the rod's axis and a few darker
+  lines, in each part's own frame, so it reads as turned timber rather than paint.
+- **Mother-of-pearl.** Bands near the tip and just behind the strand, a ring on the collar,
+  and the inner star: a pale material with three.js's *iridescence* (thin-film
+  interference, the rainbow sheen of real nacre).
+- **Light.** The bounce fill made for the hand is now its own module (`fill.js`) and lights
+  the rod's side toward the viewer, which the overhead lamp misses.
 
-**Jade.** With the fill in place, four stones (black, charcoal, slate, grey) and three
-jades were rendered side by side, and the owner chose a deep nephrite jade: palette
-`HAND.jade` (L 0.38, C 0.055, h 155), polished (roughness 0.28), with a faint mottled grain
-fixed to the hand so it doesn't swim as the hand moves. Green also keeps the hand's hue
-far from the beads' amber.
+**Physics.** The rod is a capsule from the wall to its tip, as in the original page; the
+hand's was a 0.9-long finger. In Drop the rod slides all the way back into the wall
+through its collar (the collar and rosette stay), on the same one-second eased curve as the
+camera; back in Count, the strand is lifted first and the rod slides out under it (0.8 s).
+The finial is visual only, beyond the end of the capsule, past where beads hang.
 
-**Colour rules, restated honestly.**
-- The hand has its own role, *carving*: an object the strand passes over and hangs in
-  front of, not a ground beads lie on. It must stay darker than lit amber, and is checked
-  against each bead's lit face (how a bead actually reads against it).
-- "Lighter than ebony" became "clear of ebony's tone, either side": being away from
-  ebony's lightness was always the point.
-- **One waiver, written down.** Ebony beads' lit faces are ΔE 0.078 from the jade, under
-  the 0.1 minimum; they still differ plainly by hue (brown on green). Every variation that
-  passed it either turned the jade teal or made its lamp-lit top outshine the beads, so
-  the chosen colour stays and the shortfall is listed in `WAIVERS` (palette.js), printed by
-  both checks on every run instead of failing. Tuning colours until a check passes was
-  rejected earlier in the project as the wrong way to be rigorous.
+**Colour rules: three written waivers** (listed in `WAIVERS`, printed by both checks on
+every run).
+- *Walnut vs ebony beads*, and *walnut's hue near the beads'*: a wooden rod with wooden
+  beads shares their family of browns. In the renders an ebony bead on the rod still reads
+  (darker, with its own shine), and the strand hangs against the wall, not the rod.
+- *The brightest pixels* (0.72 against a cap of 0.71, Count view): the lamp's beam is
+  centred on the rod's tip, so the nacre bands there are lit hardest. Found by measuring,
+  not guessing: hiding parts, then changing one property at a time on a fresh page showed
+  that gloss, reflections and the fill hardly mattered; the nacre's own lightness did, and
+  passing would need it so dark it reads as grey bone. Amber's lit faces (0.75) still
+  outshine it.
 
 **Hold is now Drop.** Only the button's word and the help text changed; the code still
 calls the mode `hold`.
@@ -789,7 +771,10 @@ level, and at most one every 70 ms. Measured: a dropped strand is about 15 dB qu
 - *What is a signed distance function, and how do you mesh one?* A function giving each
   point's distance to a surface (negative inside). Pieces combine with min (union) or a
   smooth min (a fillet). Surface nets or marching cubes sample it on a grid and place
-  triangles where the sign changes.
+  triangles where the sign changes. (Used for the carved hand, later replaced by a rod.)
+- *How do you find what makes a rendering check fail?* Measure, don't guess: locate the
+  offending pixels, hide parts one at a time, then change one property at a time on a
+  fresh page (some material changes only apply after a rebuild).
 - *When should a design rule bend?* When the reason behind it can be met another way, or
   physics makes it unreachable: restate the rule around its purpose, or record a waiver
   with its reason where everyone will see it, rather than tuning numbers until a check

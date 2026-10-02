@@ -26,7 +26,6 @@ npm run verify:colour     # the same rules, measured on screen under the lamp (n
 | --- | --- |
 | `src/physics.js` | Owns every simulation array; `step()` advances the strand one fixed tick |
 | `src/strand.js` | Builds the bead, thread and tassel meshes; reads positions only |
-| `src/hand.js` | The low-poly hand: the index finger the strand hangs on, the thumb's IK stroke |
 | `src/scene.js` | Renderer, the lamp, the wall and its glow, reflections, rug, camera rig |
 | `src/dust.js` | Dust motes drifting in the lamp's beam (switch: `DUST`) |
 | `src/textures.js` | Procedural canvas textures: grain, amber clouds, fringe, the rug's field, border and corners, the wall tiles |
@@ -34,7 +33,8 @@ npm run verify:colour     # the same rules, measured on screen under the lamp (n
 | `scripts/` | The colour scripts: `check-palette`, `calibrate-colour`, `verify-colour` |
 | `src/dhikr.js` | The dhikr sets (phrases, blocks, closing words), what to show at each count, saved progress |
 | `src/ui.js` | All DOM work: title, phrase, tally ring, controls, set picker and About, the completion moment |
-| `src/sdf-mesh.js` | Smooth shapes from distance functions (surface nets): the carved jade hand |
+| `src/rod.js` | The turned walnut rod with mother-of-pearl inlay, its finial, collar and star rosette |
+| `src/fill.js` | Bounce fill: lights a material's side toward the viewer, which the overhead lamp misses |
 | `src/cursor.js` | The custom cursor on desktop: Pass, Drag, Turn |
 | `scripts/make-share.mjs` | `npm run make:share`: the link-preview image and home-screen icon (`public/`) |
 | `scripts/record-capture.mjs` | `npm run record`: a 28 s screen capture with sound (`capture/misbaha.mp4`) |

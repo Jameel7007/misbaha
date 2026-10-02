@@ -17,12 +17,11 @@ export function rng(seed, skip = 0) {
 export const RNG_SEED = 99;
 export const RNG_SKIP = { cloud: 0, fringe: 320, rug: 448, strand: 262592 };
 
-// ── the finger the strand hangs over ──
-// A capsule along z: radius PEG_R, FINGER_LEN long, its rounded tip at sim.pegEnd. It sits at
-// PEG_FRONT while counting and slides back to PEG_BACK (out of the loop) in Hold mode.
-export const PEG = { x: 0, y: 6.2 }, PEG_R = 0.075, PEG_FRONT = 0.34, PEG_BACK = PEG_FRONT - 1.0;
-export const FINGER_LEN = 0.9;
+// ── the rod the strand hangs from ──
+// The rod: a capsule along z, radius PEG_R, from the wall to its rounded tip at sim.pegEnd.
+// It sits at PEG_FRONT while counting and slides back into the wall (PEG_BACK) in Hold mode.
 export const WALL_Z = -3.2;   // the tiled wall behind the strand
+export const PEG = { x: 0, y: 6.2 }, PEG_R = 0.075, PEG_FRONT = 0.34, PEG_BACK = WALL_Z;
 
 // ── the strand: 0 imam, 1–33, separator, 35–67, separator, 69–101, then the tassel cord ──
 export const NL = 102, NT = 5, N = NL + NT, SEP = [34, 68];
@@ -79,7 +78,7 @@ export const sim = {
 
 // ── physics: fixed 60 Hz step, 12 substeps ──
 const G = 55, SUB = 12, FRIC = 0.3, DAMP = 0.9993;
-const FINGER_FRIC = 0.3;   // beads touching the finger lose this share of their motion each substep, as on the rug
+const ROD_FRIC = 0.3;   // beads touching the rod lose this share of their motion each substep, as on the rug
 // rest damping: below REST units/s a velocity component loses extra speed each substep,
 // so the strand comes to a true stop instead of creeping for tens of seconds (a creeping
 // strand makes the bead highlights hop between pixels, which reads as shimmer)
@@ -89,7 +88,7 @@ export function step(dt) {
   const h = dt / SUB;
   const { pin, held, grab, bias, pegEnd, pinFrom, pinTo, grabFrom, grabTo } = sim;
   const damp = DAMP * Math.exp(-sim.drag * h);
-  const tipZ = pegEnd - PEG_R, baseZ = pegEnd - FINGER_LEN;   // the capsule's axis runs baseZ → tipZ
+  const tipZ = pegEnd - PEG_R, baseZ = WALL_Z, rodOut = tipZ > baseZ;   // the capsule's axis runs baseZ → tipZ
   for (let s = 0; s < SUB; s++) {
     const a = (s + 1) / SUB;
     for (let i = 0; i < N; i++) {
@@ -134,16 +133,16 @@ export function step(dt) {
     for (let i = 0; i < N; i++) {
       if (W[i] === 0) continue;
       const k = 3 * i, r = RAD[i];
-      // the finger: push out of the capsule (closest point on its axis segment)
+      // the rod: push out of the capsule (closest point on its axis segment)
       const z = X[k + 2];
-      if (z > baseZ && z < pegEnd + r) {
+      if (rodOut && z > baseZ && z < pegEnd + r) {
         const cz = Math.min(z, tipZ), dx = X[k] - PEG.x, dy = X[k + 1] - PEG.y, dz = z - cz;
         const d = Math.hypot(dx, dy, dz), m = PEG_R + r;
         if (d < m) {
           if (d < 1e-6) X[k + 1] = PEG.y + m;
           else { X[k] = PEG.x + dx / d * m; X[k + 1] = PEG.y + dy / d * m; X[k + 2] = cz + dz / d * m; }
-          // friction: a bead on the finger doesn't slide freely
-          X[k] -= (X[k] - P0[k]) * FINGER_FRIC; X[k + 1] -= (X[k + 1] - P0[k + 1]) * FINGER_FRIC; X[k + 2] -= (X[k + 2] - P0[k + 2]) * FINGER_FRIC;
+          // friction: a bead on the rod doesn't slide freely
+          X[k] -= (X[k] - P0[k]) * ROD_FRIC; X[k + 1] -= (X[k + 1] - P0[k + 1]) * ROD_FRIC; X[k + 2] -= (X[k + 2] - P0[k + 2]) * ROD_FRIC;
         }
       }
       if (X[k + 1] < r) {

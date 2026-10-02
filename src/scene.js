@@ -88,8 +88,8 @@ export function createStage(canvas) {
       before(shader, renderer);
       Object.assign(shader.uniforms, gate);
       // a material may keep more of the reflected light outside the cone (userData.gateFloor,
-      // a uniform object so it can be tuned live): the hand, right beside the beam, catches
-      // its spill
+      // a uniform object so it can be tuned live), as a surface right beside the beam
+      // catches its spill
       if (material.userData.gateFloor) shader.uniforms.uGateFloor = material.userData.gateFloor;
       shader.vertexShader = shader.vertexShader
         .replace('#include <common>', '#include <common>\nuniform vec3 uLampPos, uLampDir;\nuniform float uCosOuter, uCosInner, uGateFloor;\nvarying float vLampGate;')

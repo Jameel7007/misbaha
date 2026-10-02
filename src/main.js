@@ -3,13 +3,13 @@ import { bell, chime, click, setAmbience, setSoundEnabled, unlockAudio } from '.
 import * as dhikr from './dhikr.js';
 import { createCursor } from './cursor.js';
 import { createDust } from './dust.js';
-import { createHand } from './hand.js';
 import { attachInput } from './input.js';
 import { createQuality } from './quality.js';
 import {
   KIND, NL, PEG, PEG_BACK, PEG_FRONT, PEG_R, RAD, X, clamp, dropPin, holdPin, impacts,
   layoutHang, passPin, pinTop, releaseGrab, settle, sim, step,
 } from './physics.js';
+import { createRod } from './rod.js';
 import { addRoom, createRig, createStage } from './scene.js';
 import { VARIETIES, createStrand } from './strand.js';
 import { makeTextures } from './textures.js';
@@ -46,9 +46,10 @@ async function boot(stage) {
   if (import.meta.env.DEV) window.__stage = { ...stage, ...room };
   const strand = createStrand(scene, tex);
   strand.materials.forEach(stage.gateToLamp);
-  const hand = createHand(scene);
-  stage.gateToLamp(hand.material);
-  if (import.meta.env.DEV) window.__stage.hand = hand;
+  // the rod (dev: ?rod=brass or ?rod=jade tries another finish)
+  const rod = createRod(scene, (import.meta.env.DEV && new URLSearchParams(location.search).get('rod')) || undefined);
+  rod.materials.forEach(stage.gateToLamp);
+  if (import.meta.env.DEV) window.__stage.rod = rod;
   const rig = createRig(camera);
   const dust = createDust(scene, stage.lamp, renderer);
   const quality = createQuality({ renderer, lamp: stage.lamp });
@@ -93,15 +94,15 @@ async function boot(stage) {
     }
     impacts.length = 0;
   }
-  // drag: hanging on the finger the strand settles like a real one (friction between beads,
-  // the thread dragging over the finger); dropped on the rug it falls freely
+  // drag: hanging on the rod the strand settles like a real one (friction between beads,
+  // the thread dragging over the rod); dropped on the rug it falls freely
   const DRAG = { count: 11, hold: 0.4 };
   sim.drag = DRAG.count;
 
   function startAdvance(auto) {
     if (!started || resting || mode !== 'count') return;
     // a tap made while a bead is still moving, or while the strand is lifted back onto the
-    // finger, is queued, never dropped: every tap is one bead
+    // rod, is queued, never dropped: every tap is one bead
     if (adv || rehang) { if (!auto) queued++; return; }
     passPin((sim.pin + 1) % NL);
     const k = 3 * sim.pin;
@@ -119,7 +120,7 @@ async function boot(stage) {
   function arrive() {
     const { pin } = sim;
     if (KIND[pin] === 1) { click(0.6); startAdvance(true); return; }   // separators pass on their own
-    // the bead settling onto the finger: a softer tick, skipped while taps are waiting so a
+    // the bead settling onto the rod: a softer tick, skipped while taps are waiting so a
     // fast run doesn't double up
     if (queued === 0) click(0.45, { delay: 0.05 });
     count++;
@@ -153,7 +154,7 @@ async function boot(stage) {
       if (rehang.t < tA) {
         const e = easeInOut(rehang.t / tA);
         sim.pinTo = rehang.from.map((v, c) => v + (top[c] - v) * e);
-      } else { sim.pinTo = top; if (sim.pegGoal !== PEG_FRONT) movePeg(PEG_FRONT, still() ? 0 : 0.4); }
+      } else { sim.pinTo = top; if (sim.pegGoal !== PEG_FRONT) movePeg(PEG_FRONT, still() ? 0 : 0.8); }
       sim.bias = rehang.t > tA - 0.35 && rehang.t < tA + 0.8 ? 14 : 0;
       if (rehang.t > tA + 1.3) { rehang = null; sim.bias = 0; if (queued > 0) { queued--; startAdvance(false); } }
     }
@@ -163,7 +164,7 @@ async function boot(stage) {
       if (pegMove.t >= 1) pegMove = null;
     }
   }
-  // the finger slides in or out on the same eased curve as the camera (dur 0: at once)
+  // the rod slides in or out on the same eased curve as the camera (dur 0: at once)
   let pegMove = null;
   function movePeg(to, dur) {
     sim.pegGoal = to;
@@ -172,7 +173,7 @@ async function boot(stage) {
   }
 
   // ── modes ──
-  const MODE_SECONDS = 1;   // Count ⇄ Hold: camera, hand and strand move together over this
+  const MODE_SECONDS = 1;   // Count ⇄ Hold: camera, rod and strand move together over this
   function setMode(m) {
     if (m === mode) return;
     mode = m;
@@ -183,7 +184,7 @@ async function boot(stage) {
       adv = null;
       rehang = null; sim.bias = 0;
       dropPin();
-      movePeg(PEG_BACK, still() ? 0 : MODE_SECONDS);   // the hand draws back as the strand falls
+      movePeg(PEG_BACK, still() ? 0 : MODE_SECONDS);   // the rod draws back into the wall as the strand falls
     } else {
       releaseGrab();
       holdPin();
@@ -266,12 +267,12 @@ async function boot(stage) {
     onUnlock: unlockAudio,
   });
 
-  // what the camera keeps in view on phones: in Count the hand and the top of the strand,
+  // what the camera keeps in view on phones: in Count the rod's end and the top of the strand,
   // in Hold the patch of rug the strand falls on
   const subjects = (() => {
-    hand.update(1, -1); hand.group.updateMatrixWorld(true);
-    const b = new Box3().setFromObject(hand.body);   // the hand, not the arm reaching out of the picture
-    b.expandByPoint(new Vector3(PEG.x - 0.2, PEG.y - 1.6, 0.2));
+    rod.update(); rod.group.updateMatrixWorld(true);
+    const b = new Box3().setFromObject(rod.subject.finial);
+    b.expandByPoint(new Vector3(PEG.x - 0.25, PEG.y - 1.6, -0.6)).expandByPoint(new Vector3(PEG.x + 0.25, PEG.y + 0.2, 0.2));
     const corners = box => [0, 1, 2, 3, 4, 5, 6, 7].map(i => new Vector3(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z));
     return { count: corners(b), hold: corners(new Box3(new Vector3(-1.3, 0, -1), new Vector3(1.3, 0.3, 1))) };
   })();
@@ -305,7 +306,7 @@ async function boot(stage) {
   await yieldFrame();
   // the room starts dark; compile every shader now so the first lit frame doesn't stall
   stage.setLightLevel(0); dust.setLevel(0);
-  rig.update(0); strand.update(); hand.update(1, -1);
+  rig.update(0); strand.update(); rod.update();
   await renderer.compileAsync(scene, camera);
   ui.intro.progress(0.92);
   await fonts;
@@ -345,7 +346,7 @@ async function boot(stage) {
     stage.pegGlow.intensity = glowLevel * PEG_GLOW;
     rig.instant = still();   // reduced motion: no camera easing
     rig.update(dt);
-    hand.update(dt, adv && !still() ? sim.pin : -1);   // the thumb follows the bead passing over the finger (still, with reduced motion)
+    rod.update();
     dust.update(dt);
     strand.update();
     renderer.render(scene, camera);

@@ -36,7 +36,7 @@ export const RULES = {
 // Roles: 'area' colours are large surfaces a bead lies on or hangs in front of; they decide
 // figure against ground. 'accent' and 'line' colours are small or thin: they still obey the
 // hue, chroma and neighbour rules, but can't swallow a bead (and near-black ebony is always
-// close to a dark outline, which is harmless). A 'carving' (the hand) is an object the strand
+// close to a dark outline, which is harmless). A 'carving' (the rod) is an object the strand
 // passes over and hangs in front of: it is checked against the beads' lit faces (rules.mjs).
 
 // ── materials, in daylight ──
@@ -62,17 +62,23 @@ export const WALL = {
   grout:     { L: 0.20, C: 0.01,  h: 60,  role: 'line',   note: 'joints between tiles' },
 };
 
-// the hand: carved from nephrite jade, the deep spinach green of classic jade carving, so it
-// implies no particular skin tone. Green is the colour of Paradise (Stage 1's palette), and
-// jade's hue sits far from the beads' amber; kept darker and less saturated than the beads
-// so they stay the brightest, most saturated thing in the lamp
-export const HAND = { jade: { L: 0.38, C: 0.055, h: 155, role: 'carving', note: 'nephrite jade: the carved hand holding the strand' } };
+// the rod the strand hangs from: turned walnut inlaid with mother-of-pearl, as in Damascene
+// woodwork. Walnut is the beads' own family of browns (olive and ebony are woods too), so
+// it is checked as a carving against the beads' lit faces; the nacre is a small accent
+export const ROD = {
+  walnut: { L: 0.33, C: 0.049, h: 54, role: 'carving', note: 'walnut: the turned rod, finial, collar and rosette' },
+  nacre:  { L: 0.78, C: 0.02, h: 86, role: 'accent',  note: 'mother-of-pearl, aged: the inlaid bands, collar ring and inner star' },
+};
 
 // Waivers: a rule failure accepted on purpose, with the reason. The checks print each one
 // on every run instead of failing, so it stays visible.
 export const WAIVERS = [
-  { colour: 'jade', bead: 'ebony', rule: 'figure-ground',
-    reason: 'the owner chose this nephrite by eye; an ebony bead reads against it by hue (brown on green) though their lit faces are ΔE ≈ 0.08 apart. Moving the jade far enough to pass turns it teal or makes its lamp-lit top outshine the beads.' },
+  { colour: 'walnut', bead: 'ebony', rule: 'figure-ground',
+    reason: 'a wooden rod with wooden beads: walnut and lit ebony are near in colour (ΔE ≈ 0.02). Chosen by eye; an ebony bead on the rod reads by being darker and by its own shine, and the strand hangs against the wall, not the rod.' },
+  { colour: 'walnut', rule: 'hue',
+    reason: 'walnut is the beads\' own family of browns (olive and ebony are woods too); the rule keeps grounds off the bead hues, and the rod is an object the beads hang from, not a ground.' },
+  { rule: 'hotspot', view: 'count', over: 0.015,
+    reason: 'the lamp\'s beam is centred on the rod\'s tip, so the mother-of-pearl bands there are lit hardest (L 0.72 against a cap of 0.71). Amber\'s lit faces (0.75) still outshine them; darkening the nacre enough to pass makes it grey bone.' },
 ];
 
 // colours that touch each other in the patterns (for the neighbour rule)
@@ -119,4 +125,4 @@ const hexes = set => Object.fromEntries(Object.entries(set).map(([k, c]) => [k, 
 export const RUG_HEX = hexes(RUG);
 export const TILE_HEX = hexes(WALL);
 export const FLOOR_HEX = hexes(FLOOR).floor;
-export const HAND_HEX = hexes(HAND).jade;
+export const ROD_HEX = hexes(ROD);

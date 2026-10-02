@@ -17,13 +17,17 @@ export function checkRules(groups, beads, lit) {
     const beadHues = [Math.min(...list.map(c => c.h)), Math.max(...list.map(c => c.h))];
     for (const [k, c] of Object.entries(g.colours)) {
       if (!lit && !inGamut(lchToLab(c))) fail(`${k}: outside the sRGB gamut`);
-      if (c.C >= RULES.neutralC && hueGap(c.h, ...beadHues) < RULES.hueClearance) fail(`${k}: hue ${c.h.toFixed(0)}° is within ${RULES.hueClearance}° of the bead hues ${beadHues.map(h => h.toFixed(0)).join('–')}°`);
+      if (c.C >= RULES.neutralC && hueGap(c.h, ...beadHues) < RULES.hueClearance) {
+        const msg = `${k}: hue ${c.h.toFixed(0)}° is within ${RULES.hueClearance}° of the bead hues ${beadHues.map(h => h.toFixed(0)).join('–')}°`;
+        const w = WAIVERS.find(w => w.colour === k && w.rule === 'hue');
+        if (w) console.log(`  WAIVED ${msg}: ${w.reason}`); else fail(msg);
+      }
       if (lit) {
         const cap = RULES.chromaBelowBeads * Math.min(b.amber.C, b.olive.C);
         if (c.C > cap) fail(`${k}: chroma ${c.C.toFixed(3)} > ${cap.toFixed(3)} (the beads must be the most saturated thing)`);
       }
-      // a carving (the hand) is an object, not a ground: beads don't lie on it, they pass over
-      // its finger and hang in front of it. A dark stone and dark ebony share a tone, and any
+      // a carving (the rod) is an object, not a ground: beads don't lie on it, they pass over
+      // it and hang in front of it. A dark stone and dark ebony share a tone, and any
       // polished surface right under the lamp reflects enough of it to set a floor on how
       // dark it can render (about L 0.21 here), so an ebony bead reads against the carving
       // by its lit side and its shine: the carving is checked against each bead's lit face,
